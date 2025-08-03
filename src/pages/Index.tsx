@@ -54,27 +54,6 @@ const Index = () => {
 
   const isNight = currentTime.getHours() >= 18 || currentTime.getHours() < 6;
 
-  } catch (error) {
-    console.error('Error in Index component:', error);
-    return (
-      <div style={{ 
-        padding: '20px', 
-        backgroundColor: '#fee2e2', 
-        color: '#dc2626', 
-        fontSize: '16px',
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div>
-          <h1>🚨 Error Loading Page</h1>
-          <p>Please refresh the page or try again later.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={`min-h-screen transition-all duration-1000 ${
       isNight 
