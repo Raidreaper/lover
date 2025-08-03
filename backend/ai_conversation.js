@@ -23,12 +23,14 @@ const aiConversationSchema = new mongoose.Schema({
   sessionId: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    index: true
   },
   conversationId: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    index: true
   },
   companionConfig: {
     name: {
@@ -60,7 +62,8 @@ const aiConversationSchema = new mongoose.Schema({
   messages: [aiMessageSchema],
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
+    index: true
   },
   updatedAt: {
     type: Date,
@@ -77,11 +80,6 @@ aiConversationSchema.pre('save', function(next) {
   this.updatedAt = new Date();
   next();
 });
-
-// Index for faster queries
-aiConversationSchema.index({ sessionId: 1 });
-aiConversationSchema.index({ conversationId: 1 });
-aiConversationSchema.index({ createdAt: -1 });
 
 const AIConversation = mongoose.model('AIConversation', aiConversationSchema);
 

@@ -7,14 +7,16 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     minlength: 3,
-    maxlength: 30
+    maxlength: 30,
+    index: true
   },
   email: {
     type: String,
     required: true,
     unique: true,
     trim: true,
-    lowercase: true
+    lowercase: true,
+    index: true
   },
   password: {
     type: String,
@@ -33,10 +35,6 @@ const userSchema = new mongoose.Schema({
     default: true
   }
 });
-
-// Index for faster queries
-userSchema.index({ username: 1 });
-userSchema.index({ email: 1 });
 
 const User = mongoose.model('User', userSchema);
 

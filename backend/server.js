@@ -23,8 +23,6 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://kteams200:RemGUNZh
 let mongoConnected = false;
 
 mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
 })
