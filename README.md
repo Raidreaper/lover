@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Welcome to your Lovable project
 
 ## Project info
@@ -67,3 +68,7 @@ Simply open [Lovable](https://lovable.dev/projects/35d72d2e-6e25-40e5-9b0c-c0d1a
 ## I want to use a custom domain - is that possible?
 
 We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+=======
+# lover
+Overview Lover's Code is a comprehensive relationship enhancement platform that combines AI companionship, interactive games, and relationship-building activities. It's designed to help users improve their relationships, practice communication skills, and explore emotional connections through technology.
+>>>>>>> c8a72c09f259ab078212fac46a8aad5004b474ac
