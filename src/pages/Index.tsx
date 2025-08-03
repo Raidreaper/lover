@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
+  console.log('Index component rendering...');
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
