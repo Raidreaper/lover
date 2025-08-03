@@ -16,29 +16,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Simple test component to debug
-const TestComponent = () => {
-  console.log('TestComponent rendering...');
-  return (
-    <div style={{ 
-      padding: '20px', 
-      backgroundColor: 'red', 
-      color: 'white', 
-      fontSize: '24px',
-      textAlign: 'center',
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }}>
-      <div>
-        <h1>🚨 TEST COMPONENT LOADED! 🚨</h1>
-        <p>If you can see this, the app is working!</p>
-        <p>Check the console for debug logs.</p>
-      </div>
-    </div>
-  );
-};
+
 
 const App = () => {
   console.log('App component rendering...');
@@ -52,8 +30,7 @@ const App = () => {
           <AuthProvider>
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<TestComponent />} />
-                <Route path="/index" element={<Index />} />
+                <Route path="/" element={<Index />} />
                 <Route path="/onboarding" element={<UserOnboarding />} />
                 <Route path="/solo" element={<SoloPage />} />
                 <Route path="/multiplayer" element={<MultiplayerPage />} />
