@@ -9,6 +9,9 @@ try {
   console.log('main.tsx: Root element found:', rootElement);
   
   if (rootElement) {
+    // Test if React is working at all
+    rootElement.innerHTML = '<div style="background: red; color: white; padding: 20px;">React is loading...</div>';
+    
     const root = createRoot(rootElement);
     console.log('main.tsx: Root created, rendering App...');
     root.render(<App />);
