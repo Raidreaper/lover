@@ -1,6 +1,6 @@
 // API Configuration
 const API_BASE = process.env.NODE_ENV === 'production' 
-  ? '' // Use relative URLs in production (same domain)
+  ? 'https://lover-0ekx.onrender.com' // Use Render backend in production
   : 'http://localhost:4000';
 
 export const API_ENDPOINTS = {
