@@ -6,7 +6,7 @@ class DatabaseManager {
   constructor() {
     this.dbPath = './data/lovers_code.db';
     this.ensureDataDirectory();
-    this.db = new Database(this.dbPath);
+    this.db = new Database(this.dbPath, { readonly: false });
     this.initializeTables();
     console.log('✅ Database initialized successfully');
   }

@@ -16,7 +16,14 @@ import User from './user_model.js'; // Added import for User model
 import mongoose from 'mongoose';
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: './config.env' });
+
+// Debug: Check if environment variables are loaded
+console.log('🔍 Environment check:');
+console.log('  GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? 'Found' : 'Not found');
+console.log('  MONGODB_URI:', process.env.MONGODB_URI ? 'Found' : 'Not found');
+console.log('  PORT:', process.env.PORT || 'Using default');
+console.log('  CORS_ORIGIN:', process.env.CORS_ORIGIN || 'Using default');
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://kteams200:RemGUNZhXdPySZMe@cluster0.stsut.mongodb.net/lovers_code?retryWrites=true&w=majority';
@@ -52,19 +59,15 @@ const db = new DatabaseManager();
 // Initialize Gemini AI with error handling
 let genAI, model;
 try {
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyD0vDWiSPZe2A7-O3ocsxD3s73CLgy13oE';
   if (!GEMINI_API_KEY) {
     console.warn('⚠️  No GEMINI_API_KEY found in environment variables');
-    console.warn('   Using fallback API key for development');
-    // For development, use the provided API key
-    const fallbackKey = 'AIzaSyD0vDWiSPZe2A7-O3ocsxD3s73CLgy13oE';
-    genAI = new GoogleGenerativeAI(fallbackKey);
-    model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    console.log('✅ Gemini AI initialized with fallback key');
+    console.error('❌ Gemini AI initialization failed - no API key provided');
+    model = null;
   } else {
     genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    console.log('✅ Gemini AI initialized with environment key');
+    console.log('✅ Gemini AI initialized with API key');
   }
 } catch (error) {
   console.error('❌ Failed to initialize Gemini AI:', error.message);
@@ -510,17 +513,28 @@ app.post('/api/ai-companion/initialize', validateCompanionConfig, async (req, re
     const companionConfig = req.sanitizedConfig;
     // Create or get companion in SQLite (legacy/local)
     let companionId;
-    const existingCompanion = db.getCompanionByName(companionConfig.name);
-    if (existingCompanion) {
-      companionId = existingCompanion.id;
-      db.updateCompanion(companionId, companionConfig);
-    } else {
-      companionId = db.createCompanion(companionConfig);
+    let sessionId;
+    let conversationId;
+    
+    try {
+      const existingCompanion = db.getCompanionByName(companionConfig.name);
+      if (existingCompanion) {
+        companionId = existingCompanion.id;
+        db.updateCompanion(companionId, companionConfig);
+      } else {
+        companionId = db.createCompanion(companionConfig);
+      }
+      // Generate session ID
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Create conversation in SQLite (legacy/local)
+      conversationId = db.createConversation(companionId, sessionId, `Chat with ${companionConfig.name}`);
+    } catch (dbError) {
+      console.warn('⚠️  SQLite operations failed, using fallback IDs:', dbError.message);
+      // Generate fallback IDs if database operations fail
+      companionId = 1;
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      conversationId = Date.now();
     }
-    // Generate session ID
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    // Create conversation in SQLite (legacy/local)
-    const conversationId = db.createConversation(companionId, sessionId, `Chat with ${companionConfig.name}`);
     // Generate initial greeting with enhanced context
     const context = `You are ${companionConfig.name}, an AI companion with the following characteristics:
 
@@ -538,6 +552,11 @@ Instructions for your greeting:
 - Ask an engaging question to start the conversation
 
 Generate a welcoming first message:`;
+    // Check if AI model is available
+    if (!model) {
+      throw new Error('AI model not initialized');
+    }
+    
     // Retry logic for API overload
     let retries = 3;
     let greeting = null;
@@ -557,10 +576,14 @@ Generate a welcoming first message:`;
     }
     if (greeting) {
       // Save the greeting message to SQLite
-      db.addMessage(conversationId, 'ai', greeting, 'welcoming');
+      try {
+        db.addMessage(conversationId, 'ai', greeting, 'welcoming');
+      } catch (dbError) {
+        console.warn('⚠️  SQLite write failed, continuing without saving greeting:', dbError.message);
+      }
       
       // --- MongoDB: Create conversation document (optional) ---
-      if (mongoConnected) {
+      if (mongoConnected && sessionId && conversationId) {
         try {
           await AIConversation.create({
             sessionId,
@@ -607,11 +630,11 @@ app.post('/api/ai-companion/chat', validateMessage, validateCompanionConfig, asy
     const companionConfig = req.sanitizedConfig;
     // --- MongoDB: Find conversation (optional) ---
     let mongoConversation = null;
-    if (mongoConnected) {
+    if (mongoConnected && sessionId) {
       try {
         mongoConversation = await AIConversation.findOne({ sessionId });
-        if (!mongoConversation) {
-          // If not found, create new
+        if (!mongoConversation && sessionId && conversationId) {
+          // If not found, create new (only if we have valid IDs)
           mongoConversation = await AIConversation.create({
             sessionId,
             conversationId,
@@ -621,10 +644,12 @@ app.post('/api/ai-companion/chat', validateMessage, validateCompanionConfig, asy
             updatedAt: new Date()
           });
         }
-        // Save user message to MongoDB
-        mongoConversation.messages.push({ role: 'user', content: message, timestamp: new Date() });
-        mongoConversation.updatedAt = new Date();
-        await mongoConversation.save();
+        // Save user message to MongoDB if conversation exists
+        if (mongoConversation) {
+          mongoConversation.messages.push({ role: 'user', content: message, timestamp: new Date() });
+          mongoConversation.updatedAt = new Date();
+          await mongoConversation.save();
+        }
       } catch (mongoError) {
         console.warn('⚠️  MongoDB operation failed, continuing with SQLite only:', mongoError.message);
       }
@@ -637,15 +662,29 @@ app.post('/api/ai-companion/chat', validateMessage, validateCompanionConfig, asy
       conversation = db.getConversationById(parseInt(conversationId));
     }
     if (!conversation) {
-      let companionId = db.getCompanionByName(companionConfig.name)?.id;
-      if (!companionId) {
-        companionId = db.createCompanion(companionConfig);
+      try {
+        let companionId = db.getCompanionByName(companionConfig.name)?.id;
+        if (!companionId) {
+          companionId = db.createCompanion(companionConfig);
+        }
+        const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const newConversationId = db.createConversation(companionId, newSessionId, `Chat with ${companionConfig.name}`);
+        conversation = db.getConversationById(newConversationId);
+      } catch (dbError) {
+        console.warn('⚠️  SQLite conversation creation failed, using fallback:', dbError.message);
+        // Create fallback conversation object
+        conversation = {
+          id: Date.now(),
+          session_id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          title: `Chat with ${companionConfig.name}`
+        };
       }
-      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const newConversationId = db.createConversation(companionId, newSessionId, `Chat with ${companionConfig.name}`);
-      conversation = db.getConversationById(newConversationId);
     }
-    db.addMessage(conversation.id, 'user', message, 'neutral');
+    try {
+      db.addMessage(conversation.id, 'user', message, 'neutral');
+    } catch (dbError) {
+      console.warn('⚠️  SQLite write failed, continuing without saving message:', dbError.message);
+    }
     // Get recent conversation history (prefer MongoDB, fallback to SQLite)
     let conversationContext = '';
     if (mongoConnected && mongoConversation && mongoConversation.messages.length > 0) {
@@ -653,8 +692,13 @@ app.post('/api/ai-companion/chat', validateMessage, validateCompanionConfig, asy
       conversationContext = mongoMessages.map(msg => `${msg.role === 'assistant' ? 'ai' : msg.role}: ${msg.content}`).join('\n');
     } else {
       // Fallback to SQLite conversation history
-      const sqliteMessages = db.getRecentMessages(conversation.id, 10);
-      conversationContext = sqliteMessages.map(msg => `${msg.sender}: ${msg.content}`).join('\n');
+      try {
+        const sqliteMessages = db.getRecentMessages(conversation.id, 10);
+        conversationContext = sqliteMessages.map(msg => `${msg.sender}: ${msg.content}`).join('\n');
+      } catch (dbError) {
+        console.warn('⚠️  SQLite history retrieval failed, using empty context:', dbError.message);
+        conversationContext = '';
+      }
     }
     // Create enhanced context for the AI
     const context = `You are ${companionConfig.name}, an AI companion with the following characteristics:
@@ -680,6 +724,12 @@ ${conversationContext}
 User's message: ${message}
 
 Respond as ${companionConfig.name} with a personal, engaging response:`;
+    
+    // Check if AI model is available
+    if (!model) {
+      throw new Error('AI model not initialized');
+    }
+    
     // Retry logic for API overload with exponential backoff
     let retries = 3;
     let aiResponse = null;
@@ -710,7 +760,11 @@ Respond as ${companionConfig.name} with a personal, engaging response:`;
       }
       
       // Save AI response to SQLite
-      db.addMessage(conversation.id, 'ai', aiResponse, 'responsive');
+      try {
+        db.addMessage(conversation.id, 'ai', aiResponse, 'responsive');
+      } catch (dbError) {
+        console.warn('⚠️  SQLite write failed, continuing without saving AI response:', dbError.message);
+      }
       
       res.json({
         message: aiResponse,
@@ -725,8 +779,8 @@ Respond as ${companionConfig.name} with a personal, engaging response:`;
   } catch (error) {
     console.error('❌ AI Companion chat error:', error.message);
     // Enhanced fallback response
-    const companionName = companionConfig?.name || 'your companion';
-    const personality = companionConfig?.personality || 'caring';
+    const companionName = req.sanitizedConfig?.name || 'your companion';
+    const personality = req.sanitizedConfig?.personality || 'caring';
     
     let fallbackResponse = "I'm here for you! What's on your mind?";
     
