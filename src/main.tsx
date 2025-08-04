@@ -2,6 +2,17 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
+// Global error handler
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error);
+  document.body.innerHTML = `<div style="padding: 20px; background: red; color: white;">ERROR: ${event.error?.toString()}</div>`;
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+  document.body.innerHTML = `<div style="padding: 20px; background: orange; color: white;">PROMISE ERROR: ${event.reason?.toString()}</div>`;
+});
+
 console.log('main.tsx: Starting app...');
 
 // Wait for DOM to be ready
