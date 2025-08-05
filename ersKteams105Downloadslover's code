@@ -1,0 +1,10 @@
+[33m6544387[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix Vercel deployment blank page - Remove conflicting builds configuration - Add code splitting to reduce bundle size - Add global error handlers - Remove external script that causes errors - Optimize Vite build configuration
+[33m372f06e[m Fix Vercel deployment issues - Remove conflicting routes configuration - Comment out external script that might cause errors - Update vercel.json to use rewrites only
+[33mbf2e4a8[m Fix AI companion API and database issues - Add Gemini API key configuration - Fix database permission and validation errors - Update vercel.json for proper API routing - Add security improvements to .gitignore - Update deployment documentation
+[33mb685e76[m Fix MongoDB connection issues: remove deprecated options and duplicate indexes
+[33ma3ebf16[m Fix TypeScript errors in Index component
+[33m2825098[m Fix white screen issues and restore normal functionality
+[33m1bc0fe4[m Add React loading test to debug blank screen
+[33m5c17fb1[m Update App.tsx
+[33mec98de1[m Update App.tsx
+[33m79299f5[m Fix Vercel routing configuration for React Router
