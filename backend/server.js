@@ -16,7 +16,7 @@ import User from './user_model.js'; // Added import for User model
 import mongoose from 'mongoose';
 
 // Load environment variables
-dotenv.config({ path: './config.env' });
+dotenv.config({ path: 'config.env' });
 
 // Debug: Check if environment variables are loaded
 console.log('🔍 Environment check:');
