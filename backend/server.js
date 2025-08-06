@@ -122,46 +122,39 @@ app.use('/api/', limiter);
 app.use('/api/ai-companion/', aiLimiter);
 app.use(speedLimiter);
 
-// Allowed origins from env, split by comma and trim whitespace
-const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map(o => o.trim()).filter(Boolean);
+// --- CORS and Preflight Logic ---
+import cors from 'cors';
 
-app.use(cors({
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:8080',
+  'http://localhost:3000',
+  'https://lover-livid.vercel.app',
+  'https://lover-livid.vercel.app/'
+];
+
+const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
     if (!origin) return callback(null, true);
-    // Normalize origin by removing trailing slash for comparison
+    // Normalize for trailing slash
     const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
     if (
       allowedOrigins.includes(origin) ||
       allowedOrigins.includes(normalizedOrigin)
     ) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
-
-// Enhanced CORS configuration
-app.use(cors({ 
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      console.log('🚫 CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight for all routes
 
 // Body parsing with limits
 app.use(express.json({ 
