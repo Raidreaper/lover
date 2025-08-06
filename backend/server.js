@@ -122,13 +122,28 @@ app.use('/api/', limiter);
 app.use('/api/ai-companion/', aiLimiter);
 app.use(speedLimiter);
 
-// Allow multiple origins for development
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:8080',
-  'http://localhost:3000',
-  CORS_ORIGIN
-].filter(Boolean);
+// Allowed origins from env, split by comma and trim whitespace
+const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map(o => o.trim()).filter(Boolean);
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    // Normalize origin by removing trailing slash for comparison
+    const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+    if (
+      allowedOrigins.includes(origin) ||
+      allowedOrigins.includes(normalizedOrigin)
+    ) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 
 // Enhanced CORS configuration
 app.use(cors({ 
