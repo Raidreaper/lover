@@ -1204,6 +1204,16 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// Test route to verify server is working
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working!', timestamp: new Date().toISOString() });
+});
+
+// Simple auth test route
+app.get('/api/auth/test', (req, res) => {
+  res.json({ message: 'Auth routes are working!', timestamp: new Date().toISOString() });
+});
+
 // User Registration
 app.post('/api/auth/register', async (req, res) => {
   try {
