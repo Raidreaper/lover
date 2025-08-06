@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_ENDPOINTS } from '../config/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,7 +48,7 @@ const MultiplayerHistory: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:4000/api/multiplayer/sessions');
+      const response = await fetch(API_ENDPOINTS.MULTIPLAYER_SESSIONS);
       if (!response.ok) throw new Error('Failed to fetch multiplayer sessions');
       const data = await response.json();
       if (!data.sessions) throw new Error('Malformed response from server');
@@ -68,7 +69,7 @@ const MultiplayerHistory: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:4000/api/multiplayer/sessions/search?q=${encodeURIComponent(searchTerm)}`);
+      const response = await fetch(`${API_ENDPOINTS.MULTIPLAYER_SESSIONS_SEARCH}?q=${encodeURIComponent(searchTerm)}`);
       if (!response.ok) throw new Error('Failed to search multiplayer sessions');
       const data = await response.json();
       if (!data.sessions) throw new Error('Malformed response from server');
@@ -85,7 +86,7 @@ const MultiplayerHistory: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:4000/api/multiplayer/sessions/${sessionId}`);
+      const response = await fetch(API_ENDPOINTS.MULTIPLAYER_SESSION_DETAIL(sessionId));
       if (!response.ok) throw new Error('Failed to fetch messages');
       const data = await response.json();
       if (!data.messages) throw new Error('Malformed response from server');
@@ -101,7 +102,7 @@ const MultiplayerHistory: React.FC = () => {
 
   const exportSession = async (sessionId: string) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/multiplayer/sessions/${sessionId}/export`);
+      const response = await fetch(API_ENDPOINTS.MULTIPLAYER_SESSION_EXPORT(sessionId));
       const data = await response.json();
       
       // Create and download JSON file
@@ -125,7 +126,7 @@ const MultiplayerHistory: React.FC = () => {
     }
 
     try {
-      await fetch(`http://localhost:4000/api/multiplayer/sessions/${sessionId}`, {
+              await fetch(API_ENDPOINTS.MULTIPLAYER_SESSION_DELETE(sessionId), {
         method: 'DELETE'
       });
       

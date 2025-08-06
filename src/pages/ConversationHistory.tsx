@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_ENDPOINTS } from '../config/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,7 +48,7 @@ const ConversationHistory: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:4000/api/conversations');
+      const response = await fetch(API_ENDPOINTS.CONVERSATIONS);
       if (!response.ok) throw new Error('Failed to fetch conversations');
       const data = await response.json();
       if (!data.conversations) throw new Error('Malformed response from server');
@@ -68,7 +69,7 @@ const ConversationHistory: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:4000/api/conversations/search?q=${encodeURIComponent(searchTerm)}`);
+      const response = await fetch(`${API_ENDPOINTS.CONVERSATIONS_SEARCH}?q=${encodeURIComponent(searchTerm)}`);
       if (!response.ok) throw new Error('Failed to search conversations');
       const data = await response.json();
       if (!data.conversations) throw new Error('Malformed response from server');
@@ -85,7 +86,7 @@ const ConversationHistory: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:4000/api/conversations/${sessionId}`);
+      const response = await fetch(API_ENDPOINTS.CONVERSATION_DETAIL(sessionId));
       if (!response.ok) throw new Error('Failed to fetch messages');
       const data = await response.json();
       if (!data.messages) throw new Error('Malformed response from server');
@@ -101,7 +102,7 @@ const ConversationHistory: React.FC = () => {
 
   const exportConversation = async (conversationId: number) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/conversations/${conversationId}/export`);
+      const response = await fetch(API_ENDPOINTS.CONVERSATION_EXPORT(conversationId));
       const data = await response.json();
       
       // Create and download JSON file
@@ -121,7 +122,7 @@ const ConversationHistory: React.FC = () => {
 
   const updateTitle = async (conversationId: number, newTitle: string) => {
     try {
-      await fetch(`http://localhost:4000/api/conversations/${conversationId}/title`, {
+              await fetch(API_ENDPOINTS.CONVERSATION_TITLE(conversationId), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: newTitle })
@@ -143,7 +144,7 @@ const ConversationHistory: React.FC = () => {
     }
 
     try {
-      await fetch(`http://localhost:4000/api/conversations/${sessionId}`, {
+              await fetch(API_ENDPOINTS.CONVERSATION_DELETE(sessionId), {
         method: 'DELETE'
       });
       

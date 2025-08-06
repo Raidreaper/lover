@@ -481,7 +481,7 @@ const MultiplayerPage = () => {
 
   useEffect(() => {
     if (isInSession) {
-      const socketUrl = import.meta.env.VITE_SOCKET_URL || "ws://localhost:4000";
+      const socketUrl = import.meta.env.VITE_SOCKET_URL || "wss://lover-0ekx.onrender.com";
       const socket = io(socketUrl);
       socketRef.current = socket;
 

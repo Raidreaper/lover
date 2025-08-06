@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_ENDPOINTS } from "../config/api";
 import { ArrowLeft, Bot, Send, Sparkles, Heart, Zap, Settings, XCircle, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,7 +68,7 @@ const AICompanionPage: React.FC = () => {
   // Fetch conversation history from backend
   const fetchConversationHistory = async (sessionId: string, config: CompanionConfig) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/conversations/${sessionId}`);
+      const response = await fetch(API_ENDPOINTS.CONVERSATION_DETAIL(sessionId));
       if (!response.ok) throw new Error('Failed to fetch conversation history');
       const data = await response.json();
       if (data.messages && Array.isArray(data.messages)) {
@@ -91,7 +92,7 @@ const AICompanionPage: React.FC = () => {
 
   const initializeCompanion = async (config: CompanionConfig) => {
     try {
-      const response = await fetch('http://localhost:4000/api/ai-companion/initialize', {
+      const response = await fetch(API_ENDPOINTS.AI_INITIALIZE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companionConfig: config }),
@@ -139,7 +140,7 @@ const AICompanionPage: React.FC = () => {
     setInputMessage("");
     setIsTyping(true);
     try {
-      const response = await fetch('http://localhost:4000/api/ai-companion/chat', {
+      const response = await fetch(API_ENDPOINTS.AI_CHAT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
