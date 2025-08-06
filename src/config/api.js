@@ -8,13 +8,27 @@ export const API_ENDPOINTS = {
   AI_INITIALIZE: `${API_BASE}/api/ai-companion/initialize`,
   AI_CHAT: `${API_BASE}/api/ai-companion/chat`,
   
-  // Multiplayer (if needed)
+  // Authentication
+  AUTH_LOGIN: `${API_BASE}/api/auth/login`,
+  AUTH_REGISTER: `${API_BASE}/api/auth/register`,
+  AUTH_ME: `${API_BASE}/api/auth/me`,
+  
+  // Multiplayer
   MULTIPLAYER_JOIN: `${API_BASE}/api/multiplayer/join`,
   MULTIPLAYER_MESSAGE: `${API_BASE}/api/multiplayer/message`,
+  MULTIPLAYER_SESSIONS: `${API_BASE}/api/multiplayer/sessions`,
+  MULTIPLAYER_SESSIONS_SEARCH: `${API_BASE}/api/multiplayer/sessions/search`,
+  MULTIPLAYER_SESSION_DETAIL: (sessionId) => `${API_BASE}/api/multiplayer/sessions/${sessionId}`,
+  MULTIPLAYER_SESSION_EXPORT: (sessionId) => `${API_BASE}/api/multiplayer/sessions/${sessionId}/export`,
+  MULTIPLAYER_SESSION_DELETE: (sessionId) => `${API_BASE}/api/multiplayer/sessions/${sessionId}`,
   
   // Conversations
   CONVERSATIONS: `${API_BASE}/api/conversations`,
-  CONVERSATION_EXPORT: `${API_BASE}/api/conversations/export`,
+  CONVERSATIONS_SEARCH: `${API_BASE}/api/conversations/search`,
+  CONVERSATION_DETAIL: (sessionId) => `${API_BASE}/api/conversations/${sessionId}`,
+  CONVERSATION_EXPORT: (conversationId) => `${API_BASE}/api/conversations/${conversationId}/export`,
+  CONVERSATION_TITLE: (conversationId) => `${API_BASE}/api/conversations/${conversationId}/title`,
+  CONVERSATION_DELETE: (sessionId) => `${API_BASE}/api/conversations/${sessionId}`,
   
   // Statistics
   STATS_CONVERSATIONS: `${API_BASE}/api/stats/conversations`,
