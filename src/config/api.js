@@ -11,7 +11,7 @@ export const API_ENDPOINTS = {
   // Authentication
   AUTH_LOGIN: `${API_BASE}/api/auth/login`,
   AUTH_REGISTER: `${API_BASE}/api/auth/register`,
-  AUTH_ME: `${API_BASE}/api/auth/me`,
+  AUTH_ME: `${API_BASE}/api/auth/profile`,
   
   // Multiplayer
   MULTIPLAYER_JOIN: `${API_BASE}/api/multiplayer/join`,

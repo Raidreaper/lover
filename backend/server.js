@@ -1454,11 +1454,6 @@ app.post('/api/auth/logout', authenticateToken, (req, res) => {
   res.json({ message: 'Logout successful' });
 });
 
-// Test route to verify server is working
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'API is working!' });
-});
-
 // Debug route to see all registered routes
 app.get('/api/debug/routes', (req, res) => {
   const routes = [];
