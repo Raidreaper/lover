@@ -122,8 +122,7 @@ app.use('/api/', limiter);
 app.use('/api/ai-companion/', aiLimiter);
 app.use(speedLimiter);
 
-// --- CORS and Preflight Logic ---
-import cors from 'cors';
+
 
 const allowedOrigins = [
   'http://localhost:5173',
@@ -1443,6 +1442,22 @@ app.put('/api/auth/password', authenticateToken, async (req, res) => {
 // Logout (client-side token removal)
 app.post('/api/auth/logout', authenticateToken, (req, res) => {
   res.json({ message: 'Logout successful' });
+});
+
+// Test route to verify server is working
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working!' });
+});
+
+// Debug route to see all registered routes
+app.get('/api/debug/routes', (req, res) => {
+  const routes = [];
+  app._router.stack.forEach(function(r){
+    if (r.route && r.route.path){
+      routes.push(`${Object.keys(r.route.methods).join(',').toUpperCase()} ${r.route.path}`);
+    }
+  });
+  res.json({ routes });
 });
 
 // 404 handler - must be last
