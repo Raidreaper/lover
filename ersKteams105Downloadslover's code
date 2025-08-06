@@ -1,10 +1,14 @@
-[33m6544387[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix Vercel deployment blank page - Remove conflicting builds configuration - Add code splitting to reduce bundle size - Add global error handlers - Remove external script that causes errors - Optimize Vite build configuration
-[33m372f06e[m Fix Vercel deployment issues - Remove conflicting routes configuration - Comment out external script that might cause errors - Update vercel.json to use rewrites only
-[33mbf2e4a8[m Fix AI companion API and database issues - Add Gemini API key configuration - Fix database permission and validation errors - Update vercel.json for proper API routing - Add security improvements to .gitignore - Update deployment documentation
-[33mb685e76[m Fix MongoDB connection issues: remove deprecated options and duplicate indexes
-[33ma3ebf16[m Fix TypeScript errors in Index component
-[33m2825098[m Fix white screen issues and restore normal functionality
-[33m1bc0fe4[m Add React loading test to debug blank screen
-[33m5c17fb1[m Update App.tsx
-[33mec98de1[m Update App.tsx
-[33m79299f5[m Fix Vercel routing configuration for React Router
+warning: in the working copy of 'index.html', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/index.html b/index.html[m
+[1mindex e4fc651..00df187 100644[m
+[1m--- a/index.html[m
+[1m+++ b/index.html[m
+[36m@@ -4,7 +4,7 @@[m
+   <head>[m
+     <meta charset="UTF-8" />[m
+     <meta name="viewport" content="width=device-width, initial-scale=1.0" />[m
+[31m-    <title>Pulse Robot Lovable Template</title>[m
+[32m+[m[32m    <title>Lover's Code </title>[m
+     <meta name="description" content="" />[m
+     <meta name="author" content="Rezaul Karim Arif" />[m
+     <meta property="og:image" content="/og-image-update.png" />[m
