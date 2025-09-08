@@ -84,7 +84,7 @@ if (MONGODB_URI) {
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'https://lover-livid.vercel.app/';
 
 // Initialize monitoring and database
 const monitor = new ServerMonitor();
