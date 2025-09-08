@@ -10,6 +10,7 @@ import MultiplayerPage from "./pages/MultiplayerPage";
 import AICompanionPage from "./pages/AICompanionPage";
 import AICompanionOnboarding from "./pages/AICompanionOnboarding";
 import UserOnboarding from "./pages/UserOnboarding";
+import UserProfile from "./pages/UserProfile";
 import ConversationHistory from "./pages/ConversationHistory";
 import MultiplayerHistory from "./pages/MultiplayerHistory";
 import NotFound from "./pages/NotFound";
@@ -64,6 +65,7 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/onboarding" element={<UserOnboarding />} />
+                <Route path="/profile" element={<UserProfile />} />
                 <Route path="/solo" element={<SoloPage />} />
                 <Route path="/multiplayer" element={<MultiplayerPage />} />
                 <Route path="/ai-companion" element={<AICompanionPage />} />

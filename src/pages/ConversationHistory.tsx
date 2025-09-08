@@ -190,9 +190,12 @@ const ConversationHistory: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading conversations...</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-purple-50 to-slate-200 dark:from-slate-900 dark:via-purple-900 dark:to-slate-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <MessageCircle className="w-8 h-8 text-white animate-pulse" />
+          </div>
+          <p className="text-pink-700 dark:text-pink-300">Loading conversations...</p>
         </div>
       </div>
     );
@@ -211,13 +214,14 @@ const ConversationHistory: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Conversation History</h1>
-        <Button onClick={() => navigate('/')} variant="outline">
-          Back to Home
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-purple-50 to-slate-200 dark:from-slate-900 dark:via-purple-900 dark:to-slate-800">
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-pink-800 dark:text-pink-200">Conversation History</h1>
+          <Button onClick={() => navigate('/')} variant="outline" className="border-pink-300 hover:bg-pink-50">
+            Back to Home
+          </Button>
+        </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Conversation List */}
@@ -437,6 +441,7 @@ const ConversationHistory: React.FC = () => {
             </Card>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

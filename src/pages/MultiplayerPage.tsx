@@ -484,6 +484,16 @@ const MultiplayerPage = () => {
   "🎏", "🎐", "🎀", "🎁", "🎗️", "🎟️", "🎫", "🎖️", "🏆", "🏅", "🥇", "🥈", "🥉", "⚽", "⚾", "🥎", "🏀", "🏈", "⚽", "🏉", "🎾", "🥏"
 ];
 
+  // Restore session from localStorage on page load
+  useEffect(() => {
+    const savedSessionId = localStorage.getItem('multiplayerSessionId');
+    const savedPlayerName = localStorage.getItem('multiplayerPlayerName');
+    if (savedSessionId && savedPlayerName) {
+      setSessionId(savedSessionId);
+      setPlayerName(savedPlayerName);
+    }
+  }, []);
+
   useEffect(() => {
     if (isInSession) {
       const socketUrl = import.meta.env.VITE_SOCKET_URL || "wss://lover-0ekx.onrender.com";
@@ -604,6 +614,9 @@ const MultiplayerPage = () => {
     const newSessionId = `${timestamp}${random}`.toUpperCase();
     setSessionId(newSessionId);
     
+    // Save session to localStorage
+    localStorage.setItem('multiplayerSessionId', newSessionId);
+    
     // If user is not logged in, show name dialog
     if (!user) {
       setShowNameDialog(true);
@@ -616,6 +629,10 @@ const MultiplayerPage = () => {
   const joinSession = () => {
     if (sessionId.trim()) {
       setIsJoiningSession(true);
+      
+      // Save session to localStorage
+      localStorage.setItem('multiplayerSessionId', sessionId);
+      
       // If user is not logged in, show name dialog
       if (!user) {
         setShowNameDialog(true);
@@ -628,6 +645,8 @@ const MultiplayerPage = () => {
 
   const handleNameSubmit = () => {
     if (playerName.trim()) {
+      // Save player name to localStorage
+      localStorage.setItem('multiplayerPlayerName', playerName);
       setShowNameDialog(false);
       setIsInSession(true);
     }
