@@ -1,33 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode, useCallback } from 'react';
 import { API_ENDPOINTS } from '../config/api';
+import { User, AuthContextType } from './AuthContextTypes';
+import { AuthContext } from './AuthContextDefinition';
+import logger from '../lib/logger';
 
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  createdAt: string;
-  lastLogin: string;
-}
 
-interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  login: (username: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
-  loading: boolean;
-  error: string | null;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -42,11 +19,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check if user is authenticated on mount
   useEffect(() => {
     const checkAuth = async () => {
-      if (token) {
+      const storedToken = localStorage.getItem('token');
+      
+      if (storedToken) {
         try {
           const response = await fetch(API_ENDPOINTS.AUTH_ME, {
             headers: {
-              'Authorization': `Bearer ${token}`,
+              'Authorization': `Bearer ${storedToken}`,
               'Content-Type': 'application/json',
             },
           });
@@ -54,22 +33,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (response.ok) {
             const data = await response.json();
             setUser(data.user);
+            setToken(storedToken);
           } else {
             // Token is invalid, remove it
+            logger.log('Token validation failed, removing from storage');
             localStorage.removeItem('token');
             setToken(null);
+            setUser(null);
           }
         } catch (error) {
-          console.error('Auth check failed:', error);
+          logger.error('Auth check failed:', error);
           localStorage.removeItem('token');
           setToken(null);
+          setUser(null);
         }
       }
       setLoading(false);
     };
 
     checkAuth();
-  }, [token]);
+  }, []); // Only run on mount, not when token changes
+
+
+
+
 
   const login = async (username: string, password: string) => {
     try {
@@ -130,12 +117,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
   };
 
+    // Refresh authentication state (useful for page refreshes)
+  const refreshAuth = useCallback(async () => {
+    const storedToken = localStorage.getItem('token');
+    if (storedToken && !user) {
+      try {
+        const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+          headers: {
+            'Authorization': `Bearer ${storedToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+          setToken(storedToken);
+          return true;
+        }
+      } catch (error) {
+        logger.error('Auth refresh failed:', error);
+      }
+    }
+    return false;
+  }, [user]);
+
+  // Listen for window focus to refresh authentication state
+  useEffect(() => {
+    const handleFocus = () => {
+      if (token && user) {
+        // User is already authenticated, just verify token is still valid
+        refreshAuth();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [token, user, refreshAuth]);
+
   const value: AuthContextType = {
     user,
     token,
     login,
     register,
     logout,
+    refreshAuth,
     loading,
     error,
   };

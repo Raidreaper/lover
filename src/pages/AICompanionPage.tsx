@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { API_ENDPOINTS } from "../config/api";
 import { ArrowLeft, Bot, Send, Sparkles, Heart, Zap, Settings, XCircle, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import HamburgerMenu from "@/components/HamburgerMenu";
+import { apiClient } from "@/lib/api-client";
+import logger from "@/lib/logger";
 
 interface Message {
   id: number;
@@ -28,6 +30,9 @@ const AICompanionPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [companionConfig, setCompanionConfig] = useState<CompanionConfig | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<number | null>(null);
@@ -57,6 +62,7 @@ const AICompanionPage: React.FC = () => {
       // No session, start new
       initializeCompanion(config);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   // Save session/conversation IDs to localStorage for persistence
@@ -67,15 +73,14 @@ const AICompanionPage: React.FC = () => {
 
   // Fetch conversation history from backend
   const fetchConversationHistory = async (sessionId: string, config: CompanionConfig) => {
+    setIsLoadingHistory(true);
     try {
-      const response = await fetch(API_ENDPOINTS.CONVERSATION_DETAIL(sessionId));
-      if (!response.ok) throw new Error('Failed to fetch conversation history');
-      const data = await response.json();
-      if (data.messages && Array.isArray(data.messages)) {
-        const restoredMessages: Message[] = data.messages.map((msg: any, idx: number) => ({
+      const response = await apiClient.get<{ messages: Array<{ id?: number; content: string; sender: string; timestamp: string; emotion?: string }> }>(`/api/conversations/${sessionId}`);
+      if (response.data?.messages && Array.isArray(response.data.messages)) {
+        const restoredMessages: Message[] = response.data.messages.map((msg: { id?: number; content: string; sender: string; timestamp: string; emotion?: string }, idx: number) => ({
           id: msg.id || idx + 1,
           text: msg.content,
-          sender: msg.sender,
+          sender: msg.sender as "user" | "ai",
           timestamp: new Date(msg.timestamp),
           emotion: msg.emotion || 'neutral',
         }));
@@ -85,12 +90,16 @@ const AICompanionPage: React.FC = () => {
         initializeCompanion(config);
       }
     } catch (error) {
+      logger.error('Failed to fetch conversation history:', error);
       // Fallback: start new
       initializeCompanion(config);
+    } finally {
+      setIsLoadingHistory(false);
     }
   };
 
   const initializeCompanion = async (config: CompanionConfig) => {
+    setIsInitializing(true);
     try {
       const response = await fetch(API_ENDPOINTS.AI_INITIALIZE, {
         method: 'POST',
@@ -115,6 +124,7 @@ const AICompanionPage: React.FC = () => {
         }
       }
     } catch (error) {
+      logger.error('Failed to initialize companion:', error);
       // Fallback greeting
       const fallbackMessage: Message = {
       id: 1,
@@ -124,11 +134,15 @@ const AICompanionPage: React.FC = () => {
       emotion: "welcoming"
       };
       setMessages([fallbackMessage]);
+    } finally {
+      setIsInitializing(false);
     }
   };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !companionConfig) return;
+    
+    setIsSending(true);
     const userMessage: Message = {
       id: messages.length + 1,
       text: inputMessage,
@@ -186,24 +200,43 @@ const AICompanionPage: React.FC = () => {
         setMessages(prev => [...prev, fallbackMessage]);
       }
     } catch (error) {
+      logger.error('AI chat error:', error);
+      
       let fallbackText = "I'm here to listen and support you. Could you tell me more about that?";
+      let errorType = "connection";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          errorType = "network";
+          fallbackText = "I'm having trouble connecting right now. Please check your internet connection and try again.";
+        } else if (error.message.includes('timeout')) {
+          errorType = "timeout";
+          fallbackText = "I'm taking longer than usual to respond. Please try again in a moment.";
+        } else if (error.message.includes('rate limit')) {
+          errorType = "rate_limit";
+          fallbackText = "I'm getting too many requests right now. Please wait a moment before trying again.";
+        }
+      }
+      
       if (inputMessage.toLowerCase().includes('hello') || inputMessage.toLowerCase().includes('hi')) {
-        fallbackText = "Hello! I'm here and ready to chat with you. How are you feeling today?";
+        fallbackText = errorType === "network" ? "Hello! I'm having connection issues, but I'm here for you. How are you feeling today?" : "Hello! I'm here and ready to chat with you. How are you feeling today?";
       } else if (inputMessage.toLowerCase().includes('how are you')) {
-        fallbackText = "I'm doing well, thank you for asking! I'm here to support and connect with you. How about you?";
+        fallbackText = errorType === "network" ? "I'm having some technical difficulties, but I'm doing well! How about you?" : "I'm doing well, thank you for asking! I'm here to support and connect with you. How about you?";
       } else if (inputMessage.toLowerCase().includes('thank')) {
         fallbackText = "You're very welcome! I'm here for you whenever you need to talk.";
       }
+      
       const errorMessage: Message = {
         id: messages.length + 2,
         text: fallbackText,
         sender: "ai",
         timestamp: new Date(),
-        emotion: "empathetic"
+        emotion: errorType === "network" ? "apologetic" : "empathetic"
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
+      setIsSending(false);
     }
   };
 
@@ -436,6 +469,8 @@ const AICompanionPage: React.FC = () => {
               <Button
                 type="submit"
                 disabled={!inputMessage.trim() || isTyping}
+                loading={isSending}
+                loadingText="Sending..."
                 className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white px-3 sm:px-4"
               >
                 <Send className="w-4 h-4" />

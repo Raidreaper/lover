@@ -1,74 +1,123 @@
-<<<<<<< HEAD
-# Welcome to your Lovable project
+# Lover's Code
 
-## Project info
+A comprehensive relationship enhancement platform that combines AI companionship, interactive games, and relationship-building activities. It's designed to help users improve their relationships, practice communication skills, and explore emotional connections through technology.
 
-**URL**: https://lovable.dev/projects/35d72d2e-6e25-40e5-9b0c-c0d1a7c1b727
+## 🚀 Features
 
-## How can I edit this code?
+- **AI Companion**: Personalized AI companions for emotional support and conversation
+- **Multiplayer Sessions**: Real-time chat with 400+ relationship questions
+- **Solo Activities**: Individual relationship-building exercises
+- **Conversation History**: Track and manage your interactions
+- **Modern UI**: Beautiful, responsive design with dark mode support
 
-There are several ways of editing your application.
+## 🛠️ Technologies
 
-**Use Lovable**
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Backend**: Node.js, Express, Socket.IO, MongoDB, SQLite
+- **AI**: Google Gemini AI integration
+- **Deployment**: Vercel (Frontend), Render (Backend)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/35d72d2e-6e25-40e5-9b0c-c0d1a7c1b727) and start prompting.
+## 🚀 Quick Start
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Installation
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Clone the repository
 git clone <YOUR_GIT_URL>
+cd lover's-code
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Install dependencies
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Backend Setup
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```sh
+# Navigate to backend directory
+cd backend
 
-**Use GitHub Codespaces**
+# Install backend dependencies
+npm install
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Create environment file
+cp .env.example .env
 
-## What technologies are used for this project?
+# Add your API keys to .env file
+# GEMINI_API_KEY=your_gemini_api_key_here
+# MONGODB_URI=your_mongodb_uri_here
 
-This project is built with .
+# Start backend server
+npm run dev
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🔧 Environment Variables
 
-## How can I deploy this project?
+### Frontend (.env)
+```env
+NODE_ENV=development
+```
 
-Simply open [Lovable](https://lovable.dev/projects/35d72d2e-6e25-40e5-9b0c-c0d1a7c1b727) and click on Share -> Publish.
+### Backend (.env)
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+MONGODB_URI=your_mongodb_uri_here
+PORT=4000
+CORS_ORIGIN=http://localhost:5173
+JWT_SECRET=your_jwt_secret_here
+```
 
-## I want to use a custom domain - is that possible?
+## 📱 Usage
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
-=======
-# lover
-Overview Lover's Code is a comprehensive relationship enhancement platform that combines AI companionship, interactive games, and relationship-building activities. It's designed to help users improve their relationships, practice communication skills, and explore emotional connections through technology.
->>>>>>> c8a72c09f259ab078212fac46a8aad5004b474ac
+1. **AI Companion**: Create a personalized AI companion and start meaningful conversations
+2. **Multiplayer**: Join or create sessions to play relationship-building games with others
+3. **Solo Activities**: Practice communication skills on your own
+4. **History**: Review your past conversations and interactions
+
+## 🚀 Deployment
+
+### Frontend (Vercel)
+1. Connect your GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
+
+### Backend (Render)
+1. Connect your GitHub repository to Render
+2. Set environment variables in Render dashboard
+3. Deploy automatically on push to main branch
+
+## 📚 API Documentation
+
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/auth/profile` - Get user profile
+
+### AI Companion
+- `POST /api/ai-companion/initialize` - Initialize AI companion
+- `POST /api/ai-companion/chat` - Chat with AI companion
+
+### Multiplayer
+- WebSocket events for real-time communication
+- Session management and message handling
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+For support, please open an issue on GitHub or contact the development team.

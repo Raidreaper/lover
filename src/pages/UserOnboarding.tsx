@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Heart, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 const UserOnboarding: React.FC = () => {
@@ -21,6 +21,8 @@ const UserOnboarding: React.FC = () => {
     password: '',
     confirmPassword: ''
   });
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -31,11 +33,14 @@ const UserOnboarding: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoggingIn(true);
     try {
       await login(formData.username, formData.password);
       navigate('/');
     } catch (error) {
       // Error is handled by the auth context
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -46,11 +51,14 @@ const UserOnboarding: React.FC = () => {
       return;
     }
     
+    setIsRegistering(true);
     try {
       await register(formData.username, formData.email, formData.password);
       navigate('/');
     } catch (error) {
       // Error is handled by the auth context
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -140,10 +148,12 @@ const UserOnboarding: React.FC = () => {
 
                   <Button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || isLoggingIn}
+                    loading={isLoggingIn}
+                    loadingText="Signing In..."
                     className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? 'Signing In...' : 'Sign In'}
+                    Sign In
                   </Button>
                 </form>
               </TabsContent>
@@ -262,10 +272,12 @@ const UserOnboarding: React.FC = () => {
 
                   <Button
                     type="submit"
-                    disabled={loading || formData.password !== formData.confirmPassword}
+                    disabled={loading || isRegistering || formData.password !== formData.confirmPassword}
+                    loading={isRegistering}
+                    loadingText="Creating Account..."
                     className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? 'Creating Account...' : 'Create Account'}
+                    Create Account
                   </Button>
                 </form>
               </TabsContent>

@@ -3,10 +3,11 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart, Sparkles, ArrowRight, Star, Moon, Sun, Cloud, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
+import logger from "@/lib/logger";
 
 const Index = () => {
-  console.log('Index component rendering...');
+  logger.log('Index component rendering...');
   
   const navigate = useNavigate();
   const { user } = useAuth();

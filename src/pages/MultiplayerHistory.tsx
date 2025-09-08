@@ -38,6 +38,9 @@ const MultiplayerHistory: React.FC = () => {
   const [messages, setMessages] = useState<MultiplayerMessage[]>([]);
   const [showMessages, setShowMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,8 +56,8 @@ const MultiplayerHistory: React.FC = () => {
       const data = await response.json();
       if (!data.sessions) throw new Error('Malformed response from server');
       setSessions(data.sessions);
-    } catch (error: any) {
-      setError(error.message || 'Failed to fetch multiplayer sessions');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Failed to fetch multiplayer sessions');
       setSessions([]);
     } finally {
       setLoading(false);
@@ -67,18 +70,18 @@ const MultiplayerHistory: React.FC = () => {
       return;
     }
     setError(null);
-    setLoading(true);
+    setIsSearching(true);
     try {
       const response = await fetch(`${API_ENDPOINTS.MULTIPLAYER_SESSIONS_SEARCH}?q=${encodeURIComponent(searchTerm)}`);
       if (!response.ok) throw new Error('Failed to search multiplayer sessions');
       const data = await response.json();
       if (!data.sessions) throw new Error('Malformed response from server');
       setSessions(data.sessions);
-    } catch (error: any) {
-      setError(error.message || 'Failed to search multiplayer sessions');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Failed to search multiplayer sessions');
       setSessions([]);
     } finally {
-      setLoading(false);
+      setIsSearching(false);
     }
   };
 
@@ -92,8 +95,8 @@ const MultiplayerHistory: React.FC = () => {
       if (!data.messages) throw new Error('Malformed response from server');
       setMessages(data.messages);
       setShowMessages(true);
-    } catch (error: any) {
-      setError(error.message || 'Failed to fetch messages');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Failed to fetch messages');
       setMessages([]);
     } finally {
       setLoading(false);
@@ -101,6 +104,7 @@ const MultiplayerHistory: React.FC = () => {
   };
 
   const exportSession = async (sessionId: string) => {
+    setIsExporting(true);
     try {
       const response = await fetch(API_ENDPOINTS.MULTIPLAYER_SESSION_EXPORT(sessionId));
       const data = await response.json();
@@ -117,6 +121,8 @@ const MultiplayerHistory: React.FC = () => {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to export session:', error);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -125,6 +131,7 @@ const MultiplayerHistory: React.FC = () => {
       return;
     }
 
+    setIsDeleting(true);
     try {
               await fetch(API_ENDPOINTS.MULTIPLAYER_SESSION_DELETE(sessionId), {
         method: 'DELETE'
@@ -138,6 +145,8 @@ const MultiplayerHistory: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to delete session:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -221,7 +230,12 @@ const MultiplayerHistory: React.FC = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && searchSessions()}
                 />
-                <Button onClick={searchSessions} size="sm">
+                <Button 
+                  onClick={searchSessions} 
+                  size="sm"
+                  loading={isSearching}
+                  loadingText="Searching..."
+                >
                   <Search className="h-4 w-4" />
                 </Button>
               </div>
@@ -269,6 +283,8 @@ const MultiplayerHistory: React.FC = () => {
                             <Button
                               size="sm"
                               variant="ghost"
+                              loading={isExporting}
+                              loadingText="Exporting..."
                               onClick={(e) => {
                                 e.stopPropagation();
                                 exportSession(session.session_id);
@@ -279,6 +295,8 @@ const MultiplayerHistory: React.FC = () => {
                             <Button
                               size="sm"
                               variant="ghost"
+                              loading={isDeleting}
+                              loadingText="Deleting..."
                               onClick={(e) => {
                                 e.stopPropagation();
                                 deleteSession(session.session_id);

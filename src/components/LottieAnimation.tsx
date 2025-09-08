@@ -1,9 +1,8 @@
 
-import React from "react";
 import Lottie from "lottie-react";
 
 interface LottieAnimationProps {
-  animationPath: string;
+  animationPath: object;
   className?: string;
   loop?: boolean;
   autoplay?: boolean;

@@ -10,14 +10,16 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Share2, Smile, Send, Hash, Copy, Users, Plus, Heart, MessageCircle } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import HamburgerMenu from "@/components/HamburgerMenu";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
+import { SocketMessage } from "@/types/socket";
+import logger from "@/lib/logger";
 
 const MultiplayerPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [sessionId, setSessionId] = useState("");
   const [isInSession, setIsInSession] = useState(false);
-  const [messages, setMessages] = useState<Array<{text: string, sender: string, timestamp: Date}>>([]);
+  const [messages, setMessages] = useState<SocketMessage[]>([]);
   const [messageInput, setMessageInput] = useState("");
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showNumberSelector, setShowNumberSelector] = useState(false);
@@ -29,6 +31,9 @@ const MultiplayerPage = () => {
   const [connectionStatus, setConnectionStatus] = useState("Connecting...");
   const [playerName, setPlayerName] = useState("");
   const [showNameDialog, setShowNameDialog] = useState(false);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [isJoiningSession, setIsJoiningSession] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -488,19 +493,37 @@ const MultiplayerPage = () => {
       socket.on("connect", () => {
         setIsConnected(true);
         setConnectionStatus("Connected");
-        console.log("Connected to server");
+        logger.log("Connected to server");
       });
 
       socket.on("disconnect", () => {
         setIsConnected(false);
         setConnectionStatus("Disconnected");
-        console.log("Disconnected from server");
+        logger.log("Disconnected from server");
       });
 
       socket.on("connect_error", (error) => {
         setIsConnected(false);
         setConnectionStatus("Connection failed");
         console.error("Connection error:", error);
+        logger.error("Socket connection failed:", error);
+        
+        // Add user-friendly error message
+        setMessages((prev) => [...prev, {
+          text: "❌ Failed to connect to server. Please check your internet connection and try again.",
+          sender: "System",
+          timestamp: new Date()
+        }]);
+      });
+
+      socket.on("error", (error) => {
+        console.error("Socket error:", error);
+        logger.error("Socket error:", error);
+        setMessages((prev) => [...prev, {
+          text: "❌ Connection error occurred. Please refresh the page.",
+          sender: "System",
+          timestamp: new Date()
+        }]);
       });
 
       socket.emit("join-session", { sessionId, playerName: playerName || user?.username || "Anonymous" });
@@ -513,7 +536,7 @@ const MultiplayerPage = () => {
           sender: "System",
           timestamp: new Date()
         }]);
-        console.log("Partner joined:", data);
+        logger.log("Partner joined:", data);
       });
 
       socket.on("user-left", (data) => {
@@ -524,7 +547,7 @@ const MultiplayerPage = () => {
           sender: "System",
           timestamp: new Date()
         }]);
-        console.log("Partner left:", data);
+        logger.log("Partner left:", data);
       });
 
       socket.on("chat message", (msg: {text: string, sender: string, timestamp: string | Date, playerName?: string}) => {
@@ -560,16 +583,21 @@ const MultiplayerPage = () => {
       });
 
       return () => {
-        socket.disconnect();
+        if (socket) {
+          socket.removeAllListeners();
+          socket.disconnect();
+          socketRef.current = null;
+        }
       };
     }
-  }, [isInSession, sessionId]);
+  }, [isInSession, sessionId, playerName, user?.username]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const createNewSession = () => {
+    setIsCreatingSession(true);
     // Generate a more unique session ID with timestamp
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 6);
@@ -582,16 +610,19 @@ const MultiplayerPage = () => {
     } else {
       setIsInSession(true);
     }
+    setIsCreatingSession(false);
   };
 
   const joinSession = () => {
     if (sessionId.trim()) {
+      setIsJoiningSession(true);
       // If user is not logged in, show name dialog
       if (!user) {
         setShowNameDialog(true);
       } else {
         setIsInSession(true);
       }
+      setIsJoiningSession(false);
     }
   };
 
@@ -604,10 +635,27 @@ const MultiplayerPage = () => {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (messageInput.trim() && socketRef.current && isConnected) {
+    
+    // Input validation
+    const trimmedMessage = messageInput.trim();
+    if (!trimmedMessage) {
+      return;
+    }
+    
+    if (trimmedMessage.length > 2000) {
+      setMessages((prev) => [...prev, {
+        text: "❌ Message too long. Please keep it under 2000 characters.",
+        sender: "System",
+        timestamp: new Date()
+      }]);
+      return;
+    }
+    
+    if (socketRef.current && isConnected) {
+      setIsSendingMessage(true);
       const currentPlayerName = playerName || user?.username || "Anonymous";
       const message = {
-        text: messageInput,
+        text: trimmedMessage,
         sender: currentPlayerName,
         timestamp: new Date()
       };
@@ -615,6 +663,13 @@ const MultiplayerPage = () => {
       // Add message locally with the current player name
       setMessages((prev) => [...prev, { ...message, sender: currentPlayerName }]);
       setMessageInput("");
+      setIsSendingMessage(false);
+    } else {
+      setMessages((prev) => [...prev, {
+        text: "❌ Not connected to server. Please wait for connection.",
+        sender: "System",
+        timestamp: new Date()
+      }]);
     }
   };
 
@@ -678,6 +733,8 @@ const MultiplayerPage = () => {
           <CardContent className="space-y-3 sm:space-y-4">
             <Button
               onClick={createNewSession}
+              loading={isCreatingSession}
+              loadingText="Creating..."
               className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -702,6 +759,8 @@ const MultiplayerPage = () => {
               />
               <Button 
                 onClick={joinSession}
+                loading={isJoiningSession}
+                loadingText="Joining..."
                 className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
                 disabled={!sessionId.trim()}
               >
@@ -913,6 +972,8 @@ const MultiplayerPage = () => {
           />
           <Button 
             type="submit" 
+            loading={isSendingMessage}
+            loadingText="Sending..."
             className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 px-3 sm:px-4"
             disabled={!isConnected || !messageInput.trim()}
           >

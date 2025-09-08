@@ -13,6 +13,8 @@ import UserOnboarding from "./pages/UserOnboarding";
 import ConversationHistory from "./pages/ConversationHistory";
 import MultiplayerHistory from "./pages/MultiplayerHistory";
 import NotFound from "./pages/NotFound";
+import logger from "./lib/logger";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,7 +27,7 @@ const queryClient = new QueryClient({
 
 // Error boundary component
 const ErrorFallback = ({ error }: { error: Error }) => {
-  console.error('App Error:', error);
+  logger.error('App Error:', error);
   return (
     <div style={{ 
       padding: '20px', 
@@ -49,10 +51,10 @@ const ErrorFallback = ({ error }: { error: Error }) => {
 };
 
 const App = () => {
-  console.log('App component rendering...');
+  logger.log('App component rendering...');
   
-  try {
-    return (
+  return (
+    <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
@@ -74,11 +76,8 @@ const App = () => {
           </AuthProvider>
         </TooltipProvider>
       </QueryClientProvider>
-    );
-  } catch (error) {
-    console.error('Error in App component:', error);
-    return <ErrorFallback error={error as Error} />;
-  }
+    </ErrorBoundary>
+  );
 };
 
 export default App;

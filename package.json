@@ -9,9 +9,19 @@
     "dev:backend": "node backend/server.js",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "build:prod": "vite build --mode production",
+    "build:analyze": "vite build --mode production && npx vite-bundle-analyzer dist",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "type-check": "tsc --noEmit",
     "preview": "vite preview",
-    "server": "node backend/server.js"
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "clean": "rimraf dist node_modules/.vite",
+    "start": "node backend/server.js",
+    "start:dev": "nodemon backend/server.js",
+    "start:prod": "NODE_ENV=production node backend/server.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

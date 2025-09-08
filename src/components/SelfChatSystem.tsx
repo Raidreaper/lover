@@ -28,6 +28,7 @@ const SelfChatSystem: React.FC = () => {
   const [currentMood, setCurrentMood] = useState('neutral');
   const [chatSession, setChatSession] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Conversation starters database
@@ -69,7 +70,7 @@ const SelfChatSystem: React.FC = () => {
   ];
 
   // Mood-based responses
-  const getMoodResponse = (mood: string, message: string): string => {
+  const getMoodResponse = (mood: string): string => {
     const responses = {
       grateful: [
         "That's beautiful! Gratitude is such a powerful emotion. What else are you thankful for?",
@@ -135,6 +136,7 @@ const SelfChatSystem: React.FC = () => {
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
 
+    setIsSending(true);
     const userMessage: ChatMessage = {
       id: Date.now(),
       text: inputMessage,
@@ -149,7 +151,7 @@ const SelfChatSystem: React.FC = () => {
 
     // Simulate thinking time
     setTimeout(() => {
-      const selfResponse = getMoodResponse(currentMood, inputMessage);
+      const selfResponse = getMoodResponse(currentMood);
       const selfMessage: ChatMessage = {
         id: Date.now() + 1,
         text: selfResponse,
@@ -160,10 +162,11 @@ const SelfChatSystem: React.FC = () => {
 
       setMessages(prev => [...prev, selfMessage]);
       setIsTyping(false);
+      setIsSending(false);
     }, 1000 + Math.random() * 2000); // Random delay between 1-3 seconds
   };
 
-  const useConversationStarter = (starter: ConversationStarter) => {
+  const handleConversationStarter = (starter: ConversationStarter) => {
     const starterMessage: ChatMessage = {
       id: Date.now(),
       text: starter.text,
@@ -300,7 +303,12 @@ const SelfChatSystem: React.FC = () => {
               placeholder="Type your message..."
               className="flex-1"
             />
-            <Button onClick={sendMessage} disabled={!inputMessage.trim() || isTyping}>
+            <Button 
+              onClick={sendMessage} 
+              disabled={!inputMessage.trim() || isTyping}
+              loading={isSending}
+              loadingText="Sending..."
+            >
               <Send className="h-4 w-4" />
             </Button>
             <Button onClick={startNewSession} variant="outline">
@@ -323,7 +331,7 @@ const SelfChatSystem: React.FC = () => {
             {conversationStarters.map((starter) => (
               <Button
                 key={starter.id}
-                onClick={() => useConversationStarter(starter)}
+                onClick={() => handleConversationStarter(starter)}
                 variant="outline"
                 className="h-auto p-3 text-left border-green-300 hover:bg-green-50 dark:hover:bg-green-950/20"
               >

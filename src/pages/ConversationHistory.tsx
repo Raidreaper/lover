@@ -38,6 +38,10 @@ const ConversationHistory: React.FC = () => {
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdatingTitle, setIsUpdatingTitle] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,8 +57,8 @@ const ConversationHistory: React.FC = () => {
       const data = await response.json();
       if (!data.conversations) throw new Error('Malformed response from server');
       setConversations(data.conversations);
-    } catch (error: any) {
-      setError(error.message || 'Failed to fetch conversations');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Failed to fetch conversations');
       setConversations([]);
     } finally {
       setLoading(false);
@@ -67,18 +71,18 @@ const ConversationHistory: React.FC = () => {
       return;
     }
     setError(null);
-    setLoading(true);
+    setIsSearching(true);
     try {
       const response = await fetch(`${API_ENDPOINTS.CONVERSATIONS_SEARCH}?q=${encodeURIComponent(searchTerm)}`);
       if (!response.ok) throw new Error('Failed to search conversations');
       const data = await response.json();
       if (!data.conversations) throw new Error('Malformed response from server');
       setConversations(data.conversations);
-    } catch (error: any) {
-      setError(error.message || 'Failed to search conversations');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Failed to search conversations');
       setConversations([]);
     } finally {
-      setLoading(false);
+      setIsSearching(false);
     }
   };
 
@@ -92,8 +96,8 @@ const ConversationHistory: React.FC = () => {
       if (!data.messages) throw new Error('Malformed response from server');
       setMessages(data.messages);
       setShowMessages(true);
-    } catch (error: any) {
-      setError(error.message || 'Failed to fetch messages');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Failed to fetch messages');
       setMessages([]);
     } finally {
       setLoading(false);
@@ -101,8 +105,9 @@ const ConversationHistory: React.FC = () => {
   };
 
   const exportConversation = async (conversationId: number) => {
+    setIsExporting(true);
     try {
-      const response = await fetch(API_ENDPOINTS.CONVERSATION_EXPORT(conversationId));
+      const response = await fetch(API_ENDPOINTS.CONVERSATION_EXPORT(conversationId.toString()));
       const data = await response.json();
       
       // Create and download JSON file
@@ -117,12 +122,15 @@ const ConversationHistory: React.FC = () => {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to export conversation:', error);
+    } finally {
+      setIsExporting(false);
     }
   };
 
   const updateTitle = async (conversationId: number, newTitle: string) => {
+    setIsUpdatingTitle(true);
     try {
-              await fetch(API_ENDPOINTS.CONVERSATION_TITLE(conversationId), {
+              await fetch(API_ENDPOINTS.CONVERSATION_TITLE(conversationId.toString()), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: newTitle })
@@ -135,6 +143,8 @@ const ConversationHistory: React.FC = () => {
       setIsEditing(false);
     } catch (error) {
       console.error('Failed to update title:', error);
+    } finally {
+      setIsUpdatingTitle(false);
     }
   };
 
@@ -143,6 +153,7 @@ const ConversationHistory: React.FC = () => {
       return;
     }
 
+    setIsDeleting(true);
     try {
               await fetch(API_ENDPOINTS.CONVERSATION_DELETE(sessionId), {
         method: 'DELETE'
@@ -156,6 +167,8 @@ const ConversationHistory: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to delete conversation:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -222,7 +235,12 @@ const ConversationHistory: React.FC = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && searchConversations()}
                 />
-                <Button onClick={searchConversations} size="sm">
+                <Button 
+                  onClick={searchConversations} 
+                  size="sm"
+                  loading={isSearching}
+                  loadingText="Searching..."
+                >
                   <Search className="h-4 w-4" />
                 </Button>
               </div>
@@ -267,6 +285,8 @@ const ConversationHistory: React.FC = () => {
                             <Button
                               size="sm"
                               variant="ghost"
+                              loading={isExporting}
+                              loadingText="Exporting..."
                               onClick={(e) => {
                                 e.stopPropagation();
                                 exportConversation(conversation.id);
@@ -277,6 +297,8 @@ const ConversationHistory: React.FC = () => {
                             <Button
                               size="sm"
                               variant="ghost"
+                              loading={isDeleting}
+                              loadingText="Deleting..."
                               onClick={(e) => {
                                 e.stopPropagation();
                                 deleteConversation(conversation.session_id);
@@ -311,6 +333,8 @@ const ConversationHistory: React.FC = () => {
                         />
                         <Button
                           size="sm"
+                          loading={isUpdatingTitle}
+                          loadingText="Saving..."
                           onClick={() => updateTitle(selectedConversation.id, editingTitle)}
                         >
                           Save

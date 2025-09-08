@@ -1,11 +1,12 @@
 
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { ArrowRight } from "lucide-react";
 
 const CTA = () => {
   const ctaRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
+    const currentRef = ctaRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -18,13 +19,13 @@ const CTA = () => {
       { threshold: 0.1 }
     );
     
-    if (ctaRef.current) {
-      observer.observe(ctaRef.current);
+    if (currentRef) {
+      observer.observe(currentRef);
     }
     
     return () => {
-      if (ctaRef.current) {
-        observer.unobserve(ctaRef.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, []);
@@ -67,4 +68,5 @@ const CTA = () => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default CTA;

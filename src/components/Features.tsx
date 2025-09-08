@@ -13,6 +13,7 @@ const FeatureCard = ({ icon, title, description, index }: FeatureCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
+    const currentRef = cardRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -25,13 +26,13 @@ const FeatureCard = ({ icon, title, description, index }: FeatureCardProps) => {
       { threshold: 0.1 }
     );
     
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
+    if (currentRef) {
+      observer.observe(currentRef);
     }
     
     return () => {
-      if (cardRef.current) {
-        observer.unobserve(cardRef.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, []);
@@ -59,6 +60,7 @@ const Features = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
+    const currentRef = sectionRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -76,13 +78,13 @@ const Features = () => {
       { threshold: 0.1 }
     );
     
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
+    if (currentRef) {
+      observer.observe(currentRef);
     }
     
     return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, []);

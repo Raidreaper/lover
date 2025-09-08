@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const HumanoidSection = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -19,6 +19,7 @@ const HumanoidSection = () => {
   };
 
   useEffect(() => {
+    const currentRef = sectionRef.current;
     // Create intersection observer to detect when section is in view
     const observer = new IntersectionObserver(
       (entries) => {
@@ -28,8 +29,8 @@ const HumanoidSection = () => {
       { threshold: 0.1 } // Start observing when 10% of element is visible
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
+    if (currentRef) {
+      observer.observe(currentRef);
     }
     
     // Optimized scroll handler using requestAnimationFrame
@@ -71,8 +72,8 @@ const HumanoidSection = () => {
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, []);

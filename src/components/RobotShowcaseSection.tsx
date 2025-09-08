@@ -1,10 +1,11 @@
 
-import React, { useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 
 const RobotShowcaseSection = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const currentRef = sectionRef.current;
     // Simple animation when the section comes into view
     const observer = new IntersectionObserver(
       (entries) => {
@@ -19,13 +20,13 @@ const RobotShowcaseSection = () => {
       { threshold: 0.2 }
     );
     
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
+    if (currentRef) {
+      observer.observe(currentRef);
     }
     
     return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, []);
