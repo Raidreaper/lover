@@ -26,30 +26,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Error boundary component
-const ErrorFallback = ({ error }: { error: Error }) => {
-  logger.error('App Error:', error);
-  return (
-    <div style={{ 
-      padding: '20px', 
-      backgroundColor: '#fee2e2', 
-      color: '#dc2626', 
-      fontSize: '16px',
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'column'
-    }}>
-      <h1>🚨 Something went wrong</h1>
-      <p>Please refresh the page or try again later.</p>
-      <details style={{ marginTop: '20px' }}>
-        <summary>Error Details</summary>
-        <pre style={{ marginTop: '10px', fontSize: '12px' }}>{error.toString()}</pre>
-      </details>
-    </div>
-  );
-};
 
 const App = () => {
   logger.log('App component rendering...');

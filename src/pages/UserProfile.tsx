@@ -37,8 +37,9 @@ const UserProfile: React.FC = () => {
     setIsSaving(true);
     try {
       const response = await apiClient.put('/api/auth/profile', formData);
-      if (response.data) {
-        setProfile(response.data.user);
+      if (response.data && typeof response.data === 'object' && 'user' in response.data) {
+        const userData = response.data as { user: AuthUser };
+        setProfile(userData.user);
         setIsEditing(false);
         logger.log('Profile updated successfully');
       }
