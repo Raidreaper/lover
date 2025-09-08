@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { API_ENDPOINTS } from "../config/api";
 import { ArrowLeft, Bot, Send, Sparkles, Heart, Zap, Settings, XCircle, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -271,13 +271,15 @@ const AICompanionPage: React.FC = () => {
   };
 
   if (!companionConfig) {
-  return (
+    return (
       <div className="min-h-screen bg-gradient-to-br from-slate-100 via-purple-50 to-slate-200 dark:from-slate-900 dark:via-purple-900 dark:to-slate-800 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Bot className="w-8 h-8 text-white animate-pulse" />
           </div>
-          <p className="text-pink-700 dark:text-pink-300">Initializing your companion...</p>
+          <p className="text-pink-700 dark:text-pink-300">
+            {isInitializing ? "Initializing your companion..." : "Loading..."}
+          </p>
         </div>
       </div>
     );
@@ -390,7 +392,9 @@ const AICompanionPage: React.FC = () => {
               {messages.length === 0 && (
                 <div className="text-center py-6 sm:py-8 text-pink-400">
                   <Bot className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm sm:text-base">No messages yet. Start the conversation!</p>
+                  <p className="text-sm sm:text-base">
+                    {isLoadingHistory ? "Loading conversation history..." : "No messages yet. Start the conversation!"}
+                  </p>
                 </div>
               )}
                 {messages.map((msg) => (
@@ -462,13 +466,13 @@ const AICompanionPage: React.FC = () => {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Share anything on your heart..."
+                placeholder={isTyping ? "AI is typing..." : isSending ? "Sending..." : "Share anything on your heart..."}
                 className="flex-1 border-pink-200 focus:border-pink-400 bg-white/80 dark:bg-black/40 backdrop-blur-sm text-sm"
-                disabled={isTyping}
+                disabled={isTyping || isSending}
               />
               <Button
                 type="submit"
-                disabled={!inputMessage.trim() || isTyping}
+                disabled={!inputMessage.trim() || isTyping || isSending}
                 loading={isSending}
                 loadingText="Sending..."
                 className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white px-3 sm:px-4"
