@@ -17,11 +17,14 @@ Set these environment variables in your Render service:
 
 ```
 GEMINI_API_KEY=your_gemini_api_key_here
-MONGODB_URI=your_mongodb_connection_string
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_ANON_KEY=your_supabase_anon_key_here
 PORT=4000
 CORS_ORIGIN=https://your-vercel-app.vercel.app
 JWT_SECRET=your_jwt_secret_here
 ```
+
+**Note**: We've migrated from MongoDB to Supabase. See `SUPABASE_SETUP.md` for setup instructions.
 
 ### 2. Build Command
 ```

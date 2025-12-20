@@ -6,7 +6,8 @@ const validateEnvironment = () => {
   ];
   
   const optional = [
-    'MONGODB_URI',
+    'SUPABASE_URL',
+    'SUPABASE_ANON_KEY',
     'PORT',
     'NODE_ENV',
     'CORS_ORIGIN'
@@ -25,7 +26,8 @@ const validateEnvironment = () => {
   // Log optional variables if present
   optional.forEach(key => {
     if (process.env[key]) {
-      console.log(`  ${key}: ${key === 'MONGODB_URI' ? '***hidden***' : process.env[key]}`);
+      const hiddenKeys = ['MONGODB_URI', 'SUPABASE_URL', 'SUPABASE_ANON_KEY'];
+      console.log(`  ${key}: ${hiddenKeys.includes(key) ? '***hidden***' : process.env[key]}`);
     }
   });
 };

@@ -11,9 +11,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import ServerMonitor from './monitoring.js';
 import DatabaseManager from './database.js';
-import AIConversation from './ai_conversation.js'; // Added import for AIConversation
-import User from './user_model.js'; // Added import for User model
-import mongoose from 'mongoose';
+import User from './user_model.js'; // Supabase-based User model
 import validateEnvironment from './env-validator.js';
 
 // Load environment variables
@@ -30,57 +28,13 @@ validateEnvironment();
 // Debug: Check if environment variables are loaded
 console.log('🔍 Environment check:');
 console.log('  GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? 'Found' : 'Not found');
-console.log('  MONGODB_URI:', process.env.MONGODB_URI ? 'Found' : 'Not found');
+console.log('  SUPABASE_URL:', process.env.SUPABASE_URL ? 'Found' : 'Not found');
+console.log('  SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'Found' : 'Not found');
 console.log('  PORT:', process.env.PORT || 'Using default');
 console.log('  NODE_ENV:', process.env.NODE_ENV || 'development');
 
-// MongoDB Connection (optional for local dev)
-const MONGODB_URI = process.env.MONGODB_URI;
-let mongoConnected = false;
-
-if (MONGODB_URI) {
-  mongoose.connect(MONGODB_URI, {
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-    maxPoolSize: 10,
-    minPoolSize: 2,
-    maxIdleTimeMS: 30000,
-    retryWrites: true,
-    w: 'majority'
-  })
-    .then(() => {
-      console.log('✅ MongoDB connected successfully');
-      mongoConnected = true;
-      
-      // Set up connection event handlers
-      mongoose.connection.on('error', (err) => {
-        console.error('❌ MongoDB connection error:', err.message);
-        mongoConnected = false;
-      });
-      
-      mongoose.connection.on('disconnected', () => {
-        console.warn('⚠️  MongoDB disconnected');
-        mongoConnected = false;
-      });
-      
-      mongoose.connection.on('reconnected', () => {
-        console.log('✅ MongoDB reconnected');
-        mongoConnected = true;
-      });
-    })
-    .catch((error) => {
-      console.error('❌ MongoDB connection failed:', error.message);
-      console.log('🔍 Connection details:', {
-        uri: MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'), // Hide credentials in logs
-        error: error.name,
-        code: error.code
-      });
-      console.log('⚠️  Proceeding with SQLite only for data storage');
-      mongoConnected = false;
-    });
-} else {
-  console.warn('⚠️  No MONGODB_URI provided. Proceeding with SQLite only for data storage');
-}
+// Supabase connection status (set in supabase-client.js)
+// Using supabaseConnected from the imported module
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -982,16 +936,11 @@ const gracefulShutdown = (signal) => {
     console.log('✅ HTTP server closed');
     
     // Close database connections
-    if (mongoConnected) {
-      mongoose.connection.close(() => {
-        console.log('✅ MongoDB connection closed');
-        process.exit(0);
-      });
-    } else {
-      db.close();
-      console.log('✅ SQLite database closed');
-      process.exit(0);
-    }
+    // Supabase uses HTTP connections, no need to close
+    // Close SQLite database
+    db.close();
+    console.log('✅ SQLite database closed');
+    process.exit(0);
   });
   
   // Force close after 10 seconds
@@ -1393,52 +1342,47 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters long' });
     }
 
-    // Check if MongoDB is available
-    if (mongoConnected) {
+    // Check if Supabase is available
+    if (supabaseConnected) {
       try {
-        // Check if user already exists in MongoDB
-    const existingUser = await User.findOne({ 
-      $or: [{ username }, { email }] 
-    }).exec();
+        // Check if user already exists in Supabase
+        const existingUserByUsername = await User.findOne({ username });
+        const existingUserByEmail = await User.findOne({ email });
 
-    if (existingUser) {
-      return res.status(409).json({ error: 'Username or email already exists' });
-    }
+        if (existingUserByUsername || existingUserByEmail) {
+          return res.status(409).json({ error: 'Username or email already exists' });
+        }
 
-    // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+        // Hash password
+        const saltRounds = 12;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // Create user in MongoDB
-    const user = new User({
-      username,
-      email,
-      password: hashedPassword,
-      createdAt: new Date(),
-      lastLogin: new Date()
-    });
+        // Create user in Supabase
+        const user = await User.create({
+          username,
+          email,
+          password: hashedPassword
+        });
 
-    await user.save();
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, username: user.username },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+        // Generate JWT token
+        const token = jwt.sign(
+          { userId: user.id, username: user.username },
+          JWT_SECRET,
+          { expiresIn: '7d' }
+        );
 
         return res.status(201).json({
-      message: 'User registered successfully',
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        createdAt: user.createdAt
-      }
-    });
-      } catch (mongoError) {
-        console.warn('⚠️  MongoDB registration failed, falling back to SQLite:', mongoError.message);
+          message: 'User registered successfully',
+          token,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            createdAt: user.createdAt
+          }
+        });
+      } catch (supabaseError) {
+        console.warn('⚠️  Supabase registration failed, falling back to SQLite:', supabaseError.message);
       }
     }
 
@@ -1500,46 +1444,45 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    // Check if MongoDB is available
-    if (mongoConnected) {
+    // Check if Supabase is available
+    if (supabaseConnected) {
       try {
-        // Find user in MongoDB
-    const user = await User.findOne({ username }).exec();
+        // Find user in Supabase
+        const user = await User.findOne({ username });
 
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid username or password' });
-    }
+        if (!user) {
+          return res.status(401).json({ error: 'Invalid username or password' });
+        }
 
-    // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+        // Check password
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        
+        if (!isValidPassword) {
+          return res.status(401).json({ error: 'Invalid username or password' });
+        }
 
-    if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid username or password' });
-    }
+        // Update last login
+        await User.updateLastLogin(user.id);
 
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, username: user.username },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+        // Generate JWT token
+        const token = jwt.sign(
+          { userId: user.id, username: user.username },
+          JWT_SECRET,
+          { expiresIn: '7d' }
+        );
 
         return res.json({
-      message: 'Login successful',
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        lastLogin: user.lastLogin
-      }
-    });
-      } catch (mongoError) {
-        console.warn('⚠️  MongoDB login failed, falling back to SQLite:', mongoError.message);
+          message: 'Login successful',
+          token,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            lastLogin: new Date()
+          }
+        });
+      } catch (supabaseError) {
+        console.warn('⚠️  Supabase login failed, falling back to SQLite:', supabaseError.message);
       }
     }
 
@@ -1600,14 +1543,15 @@ app.get('/api/auth/profile', authenticateToken, async (req, res) => {
     // Check if this is a SQLite user ID (starts with "user-")
     const isSQLiteUser = typeof userId === 'string' && userId.startsWith('user-');
     
-    // Try MongoDB first if connected and user ID looks like MongoDB ObjectId
-    if (mongoConnected && !isSQLiteUser) {
+    // Try Supabase first if connected and user ID looks like UUID (Supabase format)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+    if (supabaseConnected && !isSQLiteUser && isUUID) {
       try {
-        const user = await User.findById(userId).exec();
+        const user = await User.findById(userId);
         if (user) {
           return res.json({
             user: {
-              id: user._id,
+              id: user.id,
               username: user.username,
               email: user.email,
               createdAt: user.createdAt,
@@ -1615,14 +1559,14 @@ app.get('/api/auth/profile', authenticateToken, async (req, res) => {
             }
           });
         }
-      } catch (mongoError) {
-        // If MongoDB query fails (e.g., invalid ObjectId), fall through to SQLite
-        console.warn('⚠️  MongoDB profile fetch failed, falling back to SQLite:', mongoError.message);
+      } catch (supabaseError) {
+        // If Supabase query fails, fall through to SQLite
+        console.warn('⚠️  Supabase profile fetch failed, falling back to SQLite:', supabaseError.message);
       }
     }
     
-    // Fallback to SQLite user (or if MongoDB not connected)
-    if (isSQLiteUser || !mongoConnected) {
+    // Fallback to SQLite user (or if Supabase not connected)
+    if (isSQLiteUser || !supabaseConnected) {
       try {
         const user = db.getUserById(userId);
         if (user) {
@@ -1678,14 +1622,15 @@ app.get('/api/auth/me', async (req, res) => {
       }
 
       try {
-        // Check if MongoDB is available
-        if (mongoConnected) {
+        // Check if Supabase is available
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(decoded.userId);
+        if (supabaseConnected && isUUID) {
           try {
-            const user = await User.findById(decoded.userId).exec();
+            const user = await User.findById(decoded.userId);
             if (user) {
               return res.json({
                 user: {
-                  id: user._id,
+                  id: user.id,
                   username: user.username,
                   email: user.email,
                   createdAt: user.createdAt,
@@ -1693,12 +1638,12 @@ app.get('/api/auth/me', async (req, res) => {
                 }
               });
             }
-          } catch (mongoError) {
-            console.warn('⚠️  MongoDB user fetch failed:', mongoError.message);
+          } catch (supabaseError) {
+            console.warn('⚠️  Supabase user fetch failed:', supabaseError.message);
           }
         }
 
-        // Fallback for SQLite users or when MongoDB is unavailable
+        // Fallback for SQLite users or when Supabase is unavailable
         // For now, return the decoded token info
         return res.json({
           user: {
@@ -1734,33 +1679,49 @@ app.put('/api/auth/profile', authenticateToken, async (req, res) => {
 
     // Check if new username/email already exists
     if (username && username !== user.username) {
-      const existingUser = await User.findOne({ username }).exec();
+      const existingUser = await User.findOne({ username });
       if (existingUser) {
         return res.status(409).json({ error: 'Username already exists' });
       }
-      user.username = username;
     }
 
     if (email && email !== user.email) {
-      const existingUser = await User.findOne({ email }).exec();
+      const existingUser = await User.findOne({ email });
       if (existingUser) {
         return res.status(409).json({ error: 'Email already exists' });
       }
-      user.email = email;
     }
 
-    await user.save();
-
-    res.json({
-      message: 'Profile updated successfully',
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        createdAt: user.createdAt,
-        lastLogin: user.lastLogin
-      }
-    });
+    // Update in Supabase or SQLite
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(req.user.userId);
+    if (supabaseConnected && isUUID) {
+      const updateData = {};
+      if (username) updateData.username = username;
+      if (email) updateData.email = email;
+      
+      const { data, error } = await supabase
+        .from('users')
+        .update(updateData)
+        .eq('id', req.user.userId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      return res.json({
+        message: 'Profile updated successfully',
+        user: {
+          id: data.id,
+          username: data.username,
+          email: data.email,
+          createdAt: data.created_at,
+          lastLogin: data.last_login
+        }
+      });
+    } else {
+      // SQLite update would go here
+      return res.status(500).json({ error: 'Profile update not yet implemented for SQLite users' });
+    }
 
   } catch (error) {
     console.error('❌ Profile update error:', error);
@@ -1782,7 +1743,7 @@ app.put('/api/auth/password', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'New password must be at least 6 characters long' });
     }
 
-    const user = await User.findById(req.user.userId).exec();
+    const user = await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -1795,12 +1756,22 @@ app.put('/api/auth/password', authenticateToken, async (req, res) => {
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
-    // Hash new password
+    // Hash new password and update in Supabase or SQLite
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-    user.password = hashedPassword;
-
-    await user.save();
+    
+    if (supabaseConnected && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(req.user.userId)) {
+      // Update in Supabase
+      const { error } = await supabase
+        .from('users')
+        .update({ password_hash: hashedPassword })
+        .eq('id', req.user.userId);
+      
+      if (error) throw error;
+    } else {
+      // Update in SQLite (would need to implement this in DatabaseManager)
+      return res.status(500).json({ error: 'Password update not yet implemented for SQLite users' });
+    }
 
     res.json({ message: 'Password changed successfully' });
 
