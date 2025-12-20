@@ -87,7 +87,8 @@ const PORT = process.env.PORT || 4000;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'https://lover-livid.vercel.app/';
 
 // Trust proxy for Render (required for rate limiting behind proxy)
-app.set('trust proxy', true);
+// Set to 1 to trust only the first proxy (Render's load balancer)
+app.set('trust proxy', 1);
 
 // Initialize monitoring and database
 const monitor = new ServerMonitor();
@@ -1443,8 +1444,20 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Fallback to SQLite registration
     try {
-      // For now, just return success for SQLite (you'd implement proper SQLite user storage)
+      // Check if user already exists in SQLite
+      const existingUser = db.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(409).json({ error: 'Username already exists' });
+      }
+
+      // Hash password
+      const passwordHash = await bcrypt.hash(password, 12);
       const newUserId = `user-${Date.now()}`;
+      
+      // Create user in SQLite
+      const user = db.createUser(newUserId, username, email, passwordHash);
+      
+      // Generate JWT token
       const token = jwt.sign(
         { userId: newUserId, username: username },
         JWT_SECRET,
@@ -1452,18 +1465,21 @@ app.post('/api/auth/register', async (req, res) => {
       );
 
       return res.status(201).json({
-        message: 'User registered successfully (SQLite)',
+        message: 'User registered successfully',
         token,
         user: {
-          id: newUserId,
-          username: username,
-          email: email,
-          createdAt: new Date()
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          createdAt: user.createdAt
         }
       });
 
     } catch (sqliteError) {
       console.error('❌ SQLite registration failed:', sqliteError.message);
+      if (sqliteError.message.includes('already exists')) {
+        return res.status(409).json({ error: sqliteError.message });
+      }
       return res.status(500).json({ error: 'Registration system unavailable' });
     }
 
@@ -1529,57 +1545,40 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Fallback to SQLite authentication
     try {
-      // For now, create a simple demo user in SQLite
-      // In production, you'd want to implement proper SQLite user management
-      const demoUser = {
-        id: 'demo-user-123',
-        username: 'demo',
-        email: 'demo@example.com',
-        password: await bcrypt.hash('demo123', 12)
-      };
-
-      // Check if it's the demo user
-      if (username === 'demo' && password === 'demo123') {
-        const token = jwt.sign(
-          { userId: demoUser.id, username: demoUser.username },
-          JWT_SECRET,
-          { expiresIn: '7d' }
-        );
-
-        return res.json({
-          message: 'Login successful (demo user)',
-          token,
-          user: {
-            id: demoUser.id,
-            username: demoUser.username,
-            email: demoUser.email,
-            lastLogin: new Date()
-          }
-        });
+      // Find user in SQLite
+      const user = db.getUserByUsername(username);
+      
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid username or password' });
       }
 
-      // If not demo user, check if we can create one
-      if (username === 'test' && password === 'test123') {
-        const newUserId = `user-${Date.now()}`;
-        const token = jwt.sign(
-          { userId: newUserId, username: username },
-          JWT_SECRET,
-          { expiresIn: '7d' }
-        );
-
-        return res.json({
-          message: 'Login successful (new user)',
-          token,
-          user: {
-            id: newUserId,
-            username: username,
-            email: `${username}@example.com`,
-            lastLogin: new Date()
-          }
-        });
+      // Check password
+      const isValidPassword = await bcrypt.compare(password, user.password_hash);
+      
+      if (!isValidPassword) {
+        return res.status(401).json({ error: 'Invalid username or password' });
       }
 
-      return res.status(401).json({ error: 'Invalid username or password' });
+      // Update last login
+      db.updateUserLastLogin(user.id);
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: user.id, username: user.username },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      return res.json({
+        message: 'Login successful',
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          lastLogin: new Date()
+        }
+      });
 
     } catch (sqliteError) {
       console.error('❌ SQLite authentication failed:', sqliteError.message);
@@ -1596,21 +1595,64 @@ app.post('/api/auth/login', async (req, res) => {
 // Get Current User Profile (requires authentication)
 app.get('/api/auth/profile', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId).exec();
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    const userId = req.user.userId;
+    
+    // Check if this is a SQLite user ID (starts with "user-")
+    const isSQLiteUser = typeof userId === 'string' && userId.startsWith('user-');
+    
+    // Try MongoDB first if connected and user ID looks like MongoDB ObjectId
+    if (mongoConnected && !isSQLiteUser) {
+      try {
+        const user = await User.findById(userId).exec();
+        if (user) {
+          return res.json({
+            user: {
+              id: user._id,
+              username: user.username,
+              email: user.email,
+              createdAt: user.createdAt,
+              lastLogin: user.lastLogin
+            }
+          });
+        }
+      } catch (mongoError) {
+        // If MongoDB query fails (e.g., invalid ObjectId), fall through to SQLite
+        console.warn('⚠️  MongoDB profile fetch failed, falling back to SQLite:', mongoError.message);
+      }
+    }
+    
+    // Fallback to SQLite user (or if MongoDB not connected)
+    if (isSQLiteUser || !mongoConnected) {
+      try {
+        const user = db.getUserById(userId);
+        if (user) {
+          return res.json({
+            user: {
+              id: user.id,
+              username: user.username,
+              email: user.email,
+              createdAt: user.created_at,
+              lastLogin: user.last_login
+            }
+          });
+        }
+      } catch (dbError) {
+        console.warn('⚠️  SQLite user fetch failed:', dbError.message);
+      }
+      
+      // Fallback: return basic info from JWT token if user not found in DB
+      return res.json({
+        user: {
+          id: userId,
+          username: req.user.username || 'User',
+          email: `${req.user.username || 'user'}@example.com`,
+          createdAt: new Date(parseInt(userId.split('-')[1]) || Date.now()),
+          lastLogin: new Date()
+        }
+      });
     }
 
-    res.json({
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        createdAt: user.createdAt,
-        lastLogin: user.lastLogin
-      }
-    });
+    return res.status(404).json({ error: 'User not found' });
 
   } catch (error) {
     console.error('❌ Profile fetch error:', error);

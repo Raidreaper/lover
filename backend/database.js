@@ -22,6 +22,44 @@ class DatabaseManager {
     // Enable foreign keys
     this.db.pragma('foreign_keys = ON');
 
+    // Migrate users table if needed (from INTEGER id to TEXT id)
+    try {
+      const tableInfo = this.db.prepare("PRAGMA table_info(users)").all();
+      const hasPasswordHash = tableInfo.some(col => col.name === 'password_hash');
+      const hasTextId = tableInfo.some(col => col.name === 'id' && col.type === 'TEXT');
+      
+      if (!hasPasswordHash || !hasTextId) {
+        console.log('🔄 Migrating users table schema...');
+        // Create new table with correct schema
+        this.db.exec(`
+          CREATE TABLE IF NOT EXISTS users_new (
+            id TEXT PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            last_login DATETIME
+          )
+        `);
+        // Copy data if old table exists
+        try {
+          this.db.exec(`
+            INSERT INTO users_new (id, username, email, created_at, last_login)
+            SELECT CAST(id AS TEXT), username, email, created_at, last_login
+            FROM users
+          `);
+        } catch (e) {
+          // Old table might not exist or have different structure, that's okay
+        }
+        // Drop old table and rename new one
+        this.db.exec('DROP TABLE IF EXISTS users');
+        this.db.exec('ALTER TABLE users_new RENAME TO users');
+        console.log('✅ Users table migration complete');
+      }
+    } catch (migrationError) {
+      console.warn('⚠️  Users table migration skipped:', migrationError.message);
+    }
+
     // Create companions table
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS companions (
@@ -63,12 +101,13 @@ class DatabaseManager {
       )
     `);
 
-    // Create users table for future use
+    // Create users table with password storage
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        email TEXT UNIQUE,
+        id TEXT PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_login DATETIME
       )
@@ -566,6 +605,38 @@ class DatabaseManager {
         timestamp: msg.timestamp
       }))
     };
+  }
+
+  // User management methods
+  createUser(userId, username, email, passwordHash) {
+    try {
+      const stmt = this.db.prepare(`
+        INSERT INTO users (id, username, email, password_hash, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+      `);
+      stmt.run(userId, username, email, passwordHash);
+      return { id: userId, username, email, createdAt: new Date() };
+    } catch (error) {
+      if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        throw new Error('Username or email already exists');
+      }
+      throw error;
+    }
+  }
+
+  getUserByUsername(username) {
+    const stmt = this.db.prepare('SELECT * FROM users WHERE username = ?');
+    return stmt.get(username) || null;
+  }
+
+  getUserById(userId) {
+    const stmt = this.db.prepare('SELECT * FROM users WHERE id = ?');
+    return stmt.get(userId) || null;
+  }
+
+  updateUserLastLogin(userId) {
+    const stmt = this.db.prepare('UPDATE users SET last_login = datetime("now") WHERE id = ?');
+    stmt.run(userId);
   }
 
   // Close database connection
