@@ -2,31 +2,43 @@
 
 ## Backend Deployment (Updated)
 
+### Option 1: Using render.yaml (Recommended)
+The `render.yaml` file in the root directory will automatically configure your Render service. Just connect your GitHub repository to Render and it will use these settings:
+
+- **Root Directory**: `backend`
+- **Build Command**: `npm install`
+- **Start Command**: `npm start`
+
+### Option 2: Manual Configuration
+If you prefer to configure manually in the Render dashboard:
+
 ### 1. Environment Variables in Render Dashboard
 Set these environment variables in your Render service:
 
 ```
-GEMINI_API_KEY=AIzaSyD0vDWiSPZe2A7-O3ocsxD3s73CLgy13oE
-MONGODB_URI=mongodb+srv://kteams200:RemGUNZhXdPySZMe@cluster0.stsut.mongodb.net/lovers_code?retryWrites=true&w=majority
+GEMINI_API_KEY=your_gemini_api_key_here
+MONGODB_URI=your_mongodb_connection_string
 PORT=4000
 CORS_ORIGIN=https://your-vercel-app.vercel.app
-JWT_SECRET=e9f72e1509ab69be9c2d9f3f8a45164b
+JWT_SECRET=your_jwt_secret_here
 ```
 
 ### 2. Build Command
 ```
-cd backend && npm install
+npm install
 ```
 
 ### 3. Start Command
 ```
-cd backend && node server.js
+npm start
 ```
 
 ### 4. Root Directory
 ```
 backend
 ```
+
+**Important**: If Root Directory is set to `backend`, do NOT include `cd backend` in your build/start commands!
 
 ## Frontend Deployment (Vercel)
 
