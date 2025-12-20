@@ -86,6 +86,9 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'https://lover-livid.vercel.app/';
 
+// Trust proxy for Render (required for rate limiting behind proxy)
+app.set('trust proxy', true);
+
 // Initialize monitoring and database
 const monitor = new ServerMonitor();
 const db = new DatabaseManager();
@@ -198,28 +201,46 @@ app.use(speedLimiter);
 
 
 
-const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? ['https://lover-livid.vercel.app']
-  : ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081', 'http://localhost:3000'];
+// Build allowed origins array - normalize trailing slashes
+const buildAllowedOrigins = () => {
+  if (process.env.NODE_ENV === 'production') {
+    // Use CORS_ORIGIN from env var, normalize trailing slash
+    const corsOrigin = (CORS_ORIGIN || '').trim();
+    const normalized = corsOrigin.endsWith('/') ? corsOrigin.slice(0, -1) : corsOrigin;
+    return normalized ? [normalized, corsOrigin] : ['https://lover-livid.vercel.app'];
+  }
+  return ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081', 'http://localhost:3000'];
+};
+
+const allowedOrigins = buildAllowedOrigins();
 
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, curl, etc.)
     if (!origin) return callback(null, true);
-    // Normalize for trailing slash
+    
+    // Normalize origin (remove trailing slash for comparison)
     const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
-    if (
-      allowedOrigins.includes(origin) ||
-      allowedOrigins.includes(normalizedOrigin)
-    ) {
+    
+    // Check both original and normalized versions
+    const isAllowed = allowedOrigins.some(allowed => {
+      const normalizedAllowed = allowed.endsWith('/') ? allowed.slice(0, -1) : allowed;
+      return origin === allowed || origin === normalizedAllowed || 
+             normalizedOrigin === allowed || normalizedOrigin === normalizedAllowed;
+    });
+    
+    if (isAllowed) {
       callback(null, true);
     } else {
+      console.warn(`🚫 CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 
 app.use(cors(corsOptions));
