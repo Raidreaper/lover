@@ -537,6 +537,16 @@ const MultiplayerPage = () => {
       });
 
       socket.emit("join-session", { sessionId, playerName: playerName || user?.username || "Anonymous" });
+      
+      // Listen for session join confirmation
+      socket.on("session-joined", (data: {sessionId: string, playerName: string, participantCount: number}) => {
+        logger.log("Successfully joined session:", data);
+        setMessages((prev) => [...prev, {
+          text: `✅ Connected to session. ${data.participantCount} participant(s) online.`,
+          sender: "System",
+          timestamp: new Date()
+        }]);
+      });
 
       socket.on("user-joined", (data) => {
         setPartnerOnline(true);
@@ -567,7 +577,19 @@ const MultiplayerPage = () => {
           timestamp: typeof msg.timestamp === 'string' ? new Date(msg.timestamp) : msg.timestamp,
           sender: msg.playerName || msg.sender // Use playerName if available, otherwise fallback to sender
         };
-        setMessages((prev) => [...prev, messageWithDate]);
+        
+        // Prevent duplicate messages (in case sender's message was added locally and also received via broadcast)
+        setMessages((prev) => {
+          const isDuplicate = prev.some(m => 
+            m.text === messageWithDate.text && 
+            m.sender === messageWithDate.sender &&
+            Math.abs(new Date(m.timestamp).getTime() - new Date(messageWithDate.timestamp).getTime()) < 1000
+          );
+          if (isDuplicate) {
+            return prev; // Don't add duplicate
+          }
+          return [...prev, messageWithDate];
+        });
       });
 
       socket.on("question-asked", (data: {question: string, playerName?: string}) => {
@@ -676,11 +698,26 @@ const MultiplayerPage = () => {
       const message = {
         text: trimmedMessage,
         sender: currentPlayerName,
-        timestamp: new Date()
+        timestamp: new Date().toISOString() // Use ISO string for consistency with backend
       };
-      socketRef.current.emit("chat message", { ...message, sessionId });
-      // Add message locally with the current player name
+      
+      // Verify we're in a session
+      if (!sessionId) {
+        setMessages((prev) => [...prev, {
+          text: "❌ No session ID. Please join a session first.",
+          sender: "System",
+          timestamp: new Date()
+        }]);
+        setIsSendingMessage(false);
+        return;
+      }
+      
+      // Add message locally for immediate feedback (will be filtered if duplicate from broadcast)
       setMessages((prev) => [...prev, { ...message, sender: currentPlayerName }]);
+      
+      // Send to server (server will broadcast to all including sender)
+      socketRef.current.emit("chat message", { ...message, sessionId });
+      
       setMessageInput("");
       setIsSendingMessage(false);
     } else {

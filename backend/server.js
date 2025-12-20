@@ -360,11 +360,27 @@ io.on('connection', (socket) => {
       return;
     }
     
+    // Leave any previous sessions this socket was in
+    for (const room of socket.rooms) {
+      if (room !== socket.id) { // Don't leave the socket's own room
+        socket.leave(room);
+        const oldSession = sessions.get(room);
+        if (oldSession) {
+          oldSession.participants.delete(socket.id);
+          if (oldSession.participants.size === 0) {
+            sessions.delete(room);
+          }
+        }
+      }
+    }
+    
+    // Join the new session
     socket.join(sessionId);
     
     // Store player name with socket
     socket.playerName = playerName || 'Anonymous';
     
+    // Initialize session if it doesn't exist
     if (!sessions.has(sessionId)) {
       sessions.set(sessionId, { 
         participants: new Set(),
@@ -396,14 +412,26 @@ io.on('connection', (socket) => {
       console.error('❌ Failed to update participant count:', error);
     }
     
-    console.log(`👥 User ${socket.playerName} (${socket.id}) joined session ${sessionId}`);
-    console.log(`📊 Session ${sessionId} now has ${session.participants.size} participants`);
+    // Verify room membership
+    const room = io.sockets.adapter.rooms.get(sessionId);
+    const roomSize = room ? room.size : 0;
     
-    // Notify all users in the session that someone joined
+    console.log(`👥 User ${socket.playerName} (${socket.id}) joined session ${sessionId}`);
+    console.log(`📊 Session ${sessionId} now has ${session.participants.size} participants (room size: ${roomSize})`);
+    
+    // Send confirmation to the joining user
+    socket.emit('session-joined', {
+      sessionId,
+      playerName: socket.playerName,
+      participantCount: session.participants.size
+    });
+    
+    // Notify all users in the session that someone joined (including the joiner)
     io.to(sessionId).emit('user-joined', { 
       sessionId, 
       userId: socket.id,
-      playerName: socket.playerName 
+      playerName: socket.playerName,
+      participantCount: session.participants.size
     });
   });
 
@@ -416,13 +444,26 @@ io.on('connection', (socket) => {
     
     const playerName = socket.playerName || data.playerName || 'Anonymous';
     
-    console.log(`💬 Message in session ${data.sessionId} from ${playerName}: ${data.text.substring(0, 50)}...`);
+    // Verify socket is in the session
+    if (!socket.rooms.has(data.sessionId)) {
+      console.warn(`⚠️  Socket ${socket.id} tried to send message to session ${data.sessionId} but is not in that room`);
+      socket.emit('error', { message: 'You are not in this session. Please rejoin.' });
+      return;
+    }
+    
+    // Verify session exists
+    const session = sessions.get(data.sessionId);
+    if (!session) {
+      console.warn(`⚠️  Session ${data.sessionId} does not exist`);
+      socket.emit('error', { message: 'Session does not exist' });
+      return;
+    }
+    
+    console.log(`💬 Message in session ${data.sessionId} from ${playerName} (${socket.id}): ${data.text.substring(0, 50)}...`);
+    console.log(`📊 Session ${data.sessionId} has ${session.participants.size} participants:`, Array.from(session.participants));
     
     // Update session activity
-    const session = sessions.get(data.sessionId);
-    if (session) {
-      session.lastActivity = Date.now();
-    }
+    session.lastActivity = Date.now();
     
     // Save message to database
     try {
@@ -432,13 +473,25 @@ io.on('connection', (socket) => {
       console.error('❌ Failed to save multiplayer message to database:', error);
     }
     
-    // Broadcast message to all users in the session (except sender)
-    socket.to(data.sessionId).emit('chat message', {
+    // Prepare message object
+    const messageData = {
       text: data.text,
       sender: playerName,
-      timestamp: data.timestamp,
-      playerName: playerName
-    });
+      timestamp: data.timestamp || new Date().toISOString(),
+      playerName: playerName,
+      sessionId: data.sessionId
+    };
+    
+    // Broadcast message to ALL users in the session (including sender for consistency)
+    // Using io.to() instead of socket.to() to ensure all participants receive it
+    const room = io.sockets.adapter.rooms.get(data.sessionId);
+    if (room) {
+      console.log(`📤 Broadcasting to ${room.size} sockets in room ${data.sessionId}`);
+      io.to(data.sessionId).emit('chat message', messageData);
+    } else {
+      console.warn(`⚠️  Room ${data.sessionId} does not exist or is empty`);
+      socket.emit('error', { message: 'No participants in session' });
+    }
   });
 
   // Handle question asking
@@ -448,9 +501,22 @@ io.on('connection', (socket) => {
       return;
     }
     
+    // Verify socket is in the session
+    if (!socket.rooms.has(data.sessionId)) {
+      console.warn(`⚠️  Socket ${socket.id} tried to ask question in session ${data.sessionId} but is not in that room`);
+      socket.emit('error', { message: 'You are not in this session. Please rejoin.' });
+      return;
+    }
+    
     const playerName = socket.playerName || data.playerName || 'Anonymous';
     
     console.log(`❓ Question asked in session ${data.sessionId} by ${playerName}: ${data.question.substring(0, 50)}...`);
+    
+    // Update session activity
+    const session = sessions.get(data.sessionId);
+    if (session) {
+      session.lastActivity = Date.now();
+    }
     
     // Save question to database
     try {
@@ -459,11 +525,18 @@ io.on('connection', (socket) => {
       console.error('❌ Failed to save question to database:', error);
     }
     
-    // Send question to other user in the session
-    socket.to(data.sessionId).emit('question-asked', {
-      question: data.question,
-      playerName: playerName
-    });
+    // Broadcast question to ALL users in the session (so both see it)
+    const room = io.sockets.adapter.rooms.get(data.sessionId);
+    if (room) {
+      console.log(`📤 Broadcasting question to ${room.size} sockets in room ${data.sessionId}`);
+      io.to(data.sessionId).emit('question-asked', {
+        question: data.question,
+        playerName: playerName,
+        sessionId: data.sessionId
+      });
+    } else {
+      console.warn(`⚠️  Room ${data.sessionId} does not exist for question`);
+    }
   });
 
   // Handle question answers
