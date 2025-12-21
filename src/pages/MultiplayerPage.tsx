@@ -39,6 +39,8 @@ const MultiplayerPage = () => {
   const [showTruthOrDare, setShowTruthOrDare] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [truthOrDareResult, setTruthOrDareResult] = useState<{type: string, content: string, difficulty: string, playerName: string} | null>(null);
+  const [showTruthOrDarePopup, setShowTruthOrDarePopup] = useState(false);
   const [showSessionBrowser, setShowSessionBrowser] = useState(false);
   const [showCreateNamedSession, setShowCreateNamedSession] = useState(false);
   const [sessionTitle, setSessionTitle] = useState("");
@@ -642,16 +644,13 @@ const MultiplayerPage = () => {
         });
       });
 
-      socket.on("question-asked", (data: {question: string, playerName?: string}) => {
-        setCurrentQuestion(data.question);
-        setShowQuestionDialog(true);
-        // Optionally show who asked the question
-        if (data.playerName) {
-          setMessages((prev) => [...prev, {
-            text: `${data.playerName} asked: ${data.question}`,
-            sender: "System",
-            timestamp: new Date()
-          }]);
+      socket.on("question-asked", (data: {question: string, playerName?: string, sessionId?: string}) => {
+        const currentPlayerName = playerName || user?.username || "Anonymous";
+        // Only show popup if the question is from someone else (not the sender)
+        // Sender already added the message in askQuestion function, so no need to add here
+        if (data.playerName && data.playerName !== currentPlayerName) {
+          setCurrentQuestion(data.question);
+          setShowQuestionDialog(true);
         }
       });
 
@@ -662,6 +661,27 @@ const MultiplayerPage = () => {
           sender: answererName,
           timestamp: new Date()
         }]);
+      });
+
+      // Listen for Truth or Dare results - show popup that fades away
+      socket.on("truth-or-dare-spin-result", (data: {result: {type: string, content: string, difficulty: string}, playerName: string, sessionId: string, timestamp: string}) => {
+        if (data.sessionId === sessionId) {
+          // Show popup that will fade away
+          setTruthOrDareResult({
+            type: data.result.type,
+            content: data.result.content,
+            difficulty: data.result.difficulty,
+            playerName: data.playerName
+          });
+          setShowTruthOrDarePopup(true);
+          
+          // Auto-hide popup after 5 seconds with fade
+          setTimeout(() => {
+            setShowTruthOrDarePopup(false);
+            // Clear result after fade animation completes
+            setTimeout(() => setTruthOrDareResult(null), 500);
+          }, 5000);
+        }
       });
 
       return () => {
@@ -778,10 +798,8 @@ const MultiplayerPage = () => {
         imageType: imageType
       };
 
-      // Add message locally
-      setMessages((prev) => [...prev, { ...message, sender: currentPlayerName }]);
-
-      // Send to server
+      // Don't add locally - wait for broadcast to avoid duplicates
+      // Send to server (will broadcast to all including sender)
       socketRef.current.emit("chat message", { ...message, sessionId });
       
       setSelectedImage(null);
@@ -837,8 +855,8 @@ const MultiplayerPage = () => {
         return;
       }
       
-      // Add message locally for immediate feedback (will be filtered if duplicate from broadcast)
-      setMessages((prev) => [...prev, { ...message, sender: currentPlayerName }]);
+      // Don't add locally - wait for broadcast to avoid duplicates
+      // The server will broadcast to all including sender, so we'll receive it via socket
       
       // Send to server (server will broadcast to all including sender)
       socketRef.current.emit("chat message", { ...message, sessionId });
@@ -862,8 +880,8 @@ const MultiplayerPage = () => {
         sender: currentPlayerName,
         timestamp: new Date()
       };
+      // Don't add locally - wait for broadcast
       socketRef.current.emit("chat message", { ...message, sessionId });
-      setMessages((prev) => [...prev, { ...message, sender: currentPlayerName }]);
     }
   };
 
