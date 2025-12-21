@@ -549,14 +549,42 @@ const MultiplayerPage = () => {
 
       socket.emit("join-session", { sessionId, playerName: playerName || user?.username || "Anonymous" });
 
+      // Listen for chat history when rejoining a session
+      socket.on("chat-history", (data: {sessionId: string, messages: Array<{text: string, sender: string, timestamp: string, playerName?: string, type?: string, imageData?: string, imageUrl?: string}>}) => {
+        if (data.sessionId === sessionId && data.messages && data.messages.length > 0) {
+          logger.log(`Loading ${data.messages.length} previous messages`);
+          const historyMessages: SocketMessage[] = data.messages.map((msg, idx) => ({
+            text: msg.text,
+            sender: msg.playerName || msg.sender,
+            timestamp: new Date(msg.timestamp),
+            playerName: msg.playerName || msg.sender,
+            type: msg.type || 'text',
+            imageData: msg.imageData,
+            imageUrl: msg.imageUrl
+          }));
+          setMessages(historyMessages);
+        }
+      });
+
       // Listen for session join confirmation
       socket.on("session-joined", (data: {sessionId: string, playerName: string, participantCount: number}) => {
         logger.log("Successfully joined session:", data);
-        setMessages((prev) => [...prev, {
-          text: `✅ Connected to session. ${data.participantCount} participant(s) online.`,
-          sender: "System",
-          timestamp: new Date()
-        }]);
+        setMessages((prev) => {
+          // Only add system message if we don't already have messages (from history)
+          if (prev.length === 0) {
+            return [{
+              text: `✅ Connected to session. ${data.participantCount} participant(s) online.`,
+              sender: "System",
+              timestamp: new Date()
+            }];
+          }
+          // If we have history, append the system message
+          return [...prev, {
+            text: `✅ Connected to session. ${data.participantCount} participant(s) online.`,
+            sender: "System",
+            timestamp: new Date()
+          }];
+        });
       });
 
       socket.on("user-joined", (data) => {
@@ -633,18 +661,6 @@ const MultiplayerPage = () => {
           text: `Q: ${data.question}\nA: ${data.answer}`,
           sender: answererName,
           timestamp: new Date()
-        }]);
-      });
-
-      socket.on("truth-or-dare-spin-result", (data: {result: {type: string, content: string, difficulty: string}, playerName: string, sessionId: string, timestamp: string}) => {
-        const typeLabel = data.result.type === 'truth' ? 'Truth' : 'Dare';
-        const difficultyEmoji = data.result.difficulty === 'easy' ? '🟢' : data.result.difficulty === 'medium' ? '🟡' : '🔴';
-        const messageText = `🎲 ${typeLabel} ${difficultyEmoji}: ${data.result.content}`;
-        
-        setMessages((prev) => [...prev, {
-          text: messageText,
-          sender: data.playerName,
-          timestamp: new Date(data.timestamp || Date.now())
         }]);
       });
 

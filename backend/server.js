@@ -444,6 +444,28 @@ io.on('connection', (socket) => {
     console.log(`👥 User ${socket.playerName} (${socket.id}) joined session ${sessionId}`);
     console.log(`📊 Session ${sessionId} now has ${session.participants.size} participants (room size: ${roomSize})`);
     
+    // Load previous messages from database and send to the joining user
+    try {
+      const previousMessages = db.getMultiplayerMessages(sessionId, 100, 0);
+      if (previousMessages && previousMessages.length > 0) {
+        console.log(`📜 Loading ${previousMessages.length} previous messages for session ${sessionId}`);
+        // Send previous messages to the joining user
+        socket.emit('chat-history', {
+          sessionId,
+          messages: previousMessages.map(msg => ({
+            text: msg.content,
+            sender: msg.sender,
+            timestamp: msg.timestamp,
+            playerName: msg.sender,
+            type: msg.message_type || 'chat',
+            sessionId: sessionId
+          }))
+        });
+      }
+    } catch (error) {
+      console.error('❌ Failed to load chat history:', error);
+    }
+    
     // Send confirmation to the joining user
     socket.emit('session-joined', {
       sessionId,
