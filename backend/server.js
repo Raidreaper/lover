@@ -13,7 +13,8 @@ import ServerMonitor from './monitoring.js';
 import DatabaseManager from './database.js';
 import User from './user_model.js'; // Supabase-based User model
 import validateEnvironment from './env-validator.js';
-import { supabaseConnected } from './supabase-client.js'; // Import Supabase connection status
+import { supabaseConnected } from './supabase-client.js';
+import MultiplayerModel from './multiplayer_model.js'; // Import Supabase connection status
 
 // Load environment variables
 import { fileURLToPath } from 'url';

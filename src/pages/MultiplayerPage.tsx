@@ -497,15 +497,23 @@ const MultiplayerPage = () => {
   "🎏", "🎐", "🎀", "🎁", "🎗️", "🎟️", "🎫", "🎖️", "🏆", "🏅", "🥇", "🥈", "🥉", "⚽", "⚾", "🥎", "🏀", "🏈", "⚽", "🏉", "🎾", "🥏"
 ];
 
-  // Restore session from localStorage on page load
+  // Restore session from localStorage on page load and auto-rejoin
   useEffect(() => {
     const savedSessionId = localStorage.getItem('multiplayerSessionId');
-    const savedPlayerName = localStorage.getItem('multiplayerPlayerName');
-    if (savedSessionId && savedPlayerName) {
+    const savedPlayerName = localStorage.getItem('multiplayerPlayerName') || user?.username;
+    
+    if (savedSessionId) {
       setSessionId(savedSessionId);
-      setPlayerName(savedPlayerName);
+      if (savedPlayerName) {
+        setPlayerName(savedPlayerName);
+      }
+      // Auto-rejoin the session if we have a sessionId
+      if (savedSessionId && (savedPlayerName || user?.username)) {
+        setIsInSession(true);
+        logger.log('Auto-rejoining session:', savedSessionId);
+      }
     }
-  }, []);
+  }, [user?.username]);
 
   useEffect(() => {
     if (isInSession) {
@@ -743,8 +751,11 @@ const MultiplayerPage = () => {
     if (sessionId.trim()) {
       setIsJoiningSession(true);
       
-      // Save session to localStorage
+      // Save session to localStorage for persistence
       localStorage.setItem('multiplayerSessionId', sessionId);
+      if (playerName || user?.username) {
+        localStorage.setItem('multiplayerPlayerName', playerName || user?.username || 'Anonymous');
+      }
       
       // If user is not logged in, show name dialog
       if (!user) {
