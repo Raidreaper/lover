@@ -195,7 +195,8 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
                           <div className="grid grid-cols-1 gap-2">
                             <Button
                               onClick={() => {
-                                const message = encodeURIComponent(`🎉 Join me on Lover's Code! Use session code: ${sessionId}\n\nLet's connect and have fun together! 💕`);
+                                const multiplayerUrl = 'https://lover-livid.vercel.app/multiplayer';
+                                const message = encodeURIComponent(`🎉 Join me on Lover's Code!\n\nSession code: ${sessionId}\n\nJoin here: ${multiplayerUrl}\n\nLet's connect and have fun together! 💕`);
                                 window.open(`https://wa.me/?text=${message}`, '_blank');
                               }}
                               className="w-full bg-[#25D366] hover:bg-[#20BA5A] text-white font-medium"
@@ -208,7 +209,8 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
                             
                             <Button
                               onClick={() => {
-                                const message = `🎉 Join me on Lover's Code! Use session code: ${sessionId}\n\nLet's connect and have fun together! 💕`;
+                                const multiplayerUrl = 'https://lover-livid.vercel.app/multiplayer';
+                                const message = `🎉 Join me on Lover's Code!\n\nSession code: ${sessionId}\n\nJoin here: ${multiplayerUrl}\n\nLet's connect and have fun together! 💕`;
                                 navigator.clipboard.writeText(message).then(() => {
                                   toast.success('Invitation copied! Paste it in Snapchat to share.');
                                   // Try to open Snapchat web
@@ -227,8 +229,9 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
                             
                             <Button
                               onClick={() => {
-                                const message = encodeURIComponent(`🎉 Join me on Lover's Code! Use session code: ${sessionId}\n\nLet's connect and have fun together! 💕`);
-                                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin + '/multiplayer?session=' + sessionId)}&quote=${message}`, '_blank');
+                                const multiplayerUrl = 'https://lover-livid.vercel.app/multiplayer';
+                                const message = encodeURIComponent(`🎉 Join me on Lover's Code!\n\nSession code: ${sessionId}\n\nJoin here: ${multiplayerUrl}\n\nLet's connect and have fun together! 💕`);
+                                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(multiplayerUrl)}&quote=${message}`, '_blank');
                               }}
                               className="w-full bg-[#1877F2] hover:bg-[#166FE5] text-white font-medium"
                             >
