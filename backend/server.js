@@ -13,6 +13,7 @@ import ServerMonitor from './monitoring.js';
 import DatabaseManager from './database.js';
 import User from './user_model.js'; // Supabase-based User model
 import validateEnvironment from './env-validator.js';
+import { supabaseConnected } from './supabase-client.js'; // Import Supabase connection status
 
 // Load environment variables
 import { fileURLToPath } from 'url';
@@ -32,9 +33,6 @@ console.log('  SUPABASE_URL:', process.env.SUPABASE_URL ? 'Found' : 'Not found')
 console.log('  SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'Found' : 'Not found');
 console.log('  PORT:', process.env.PORT || 'Using default');
 console.log('  NODE_ENV:', process.env.NODE_ENV || 'development');
-
-// Supabase connection status (set in supabase-client.js)
-// Using supabaseConnected from the imported module
 
 const app = express();
 const PORT = process.env.PORT || 4000;
