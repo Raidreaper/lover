@@ -417,22 +417,30 @@ io.on('connection', (socket) => {
         lastActivity: Date.now()
       });
       
-      // Check database for existing session before creating
+      // Create session in database (Supabase first, SQLite fallback)
       try {
-        const existingSession = db.getMultiplayerSession(sessionId);
-        if (!existingSession) {
-          db.createMultiplayerSession(sessionId, `Multiplayer Session ${sessionId}`);
-          console.log(`📊 Created new multiplayer session in database: ${sessionId}`);
-        } else {
-          console.log(`📊 Session ${sessionId} already exists in database, using existing`);
+        if (supabaseConnected) {
+          const supabaseSession = await MultiplayerModel.createOrGetSession(sessionId, `Multiplayer Session ${sessionId}`);
+          if (supabaseSession) {
+            console.log(`📊 Created/retrieved multiplayer session in Supabase: ${sessionId}`);
+          }
+        }
+        // SQLite fallback
+        try {
+          const existingSession = db.getMultiplayerSession(sessionId);
+          if (!existingSession) {
+            db.createMultiplayerSession(sessionId, `Multiplayer Session ${sessionId}`);
+            console.log(`📊 Created new multiplayer session in SQLite: ${sessionId}`);
+          }
+        } catch (sqliteError) {
+          if (sqliteError.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+            console.log(`📊 Session ${sessionId} already exists in SQLite`);
+          } else {
+            console.error('❌ Failed to create multiplayer session in SQLite:', sqliteError);
+          }
         }
       } catch (error) {
-        // If session already exists, just log it
-        if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-          console.log(`📊 Session ${sessionId} already exists in database (constraint)`);
-        } else {
-          console.error('❌ Failed to create multiplayer session in database:', error);
-        }
+        console.error('❌ Failed to create multiplayer session:', error);
       }
     } else {
       console.log(`✅ Joining existing in-memory session: "${sessionId}" (current participants: ${sessions.get(sessionId).participants.size})`);
@@ -454,9 +462,17 @@ io.on('connection', (socket) => {
       console.log(`⚠️  Socket ${socket.id} was already in session "${sessionId}"`);
     }
     
-    // Update participant count in database
+    // Update participant count in database (Supabase first, SQLite fallback)
     try {
-      db.updateMultiplayerParticipantCount(sessionId, session.participants.size);
+      if (supabaseConnected) {
+        await MultiplayerModel.updateParticipantCount(sessionId, session.participants.size);
+      }
+      // SQLite fallback
+      try {
+        db.updateMultiplayerParticipantCount(sessionId, session.participants.size);
+      } catch (sqliteError) {
+        console.error('❌ Failed to update participant count in SQLite:', sqliteError);
+      }
     } catch (error) {
       console.error('❌ Failed to update participant count:', error);
     }
@@ -470,11 +486,28 @@ io.on('connection', (socket) => {
     console.log(`🔍 All active sessions:`, Array.from(sessions.keys()));
     console.log(`🔍 Session "${sessionId}" participants:`, Array.from(session.participants));
     
-    // Load previous messages from database and send to the joining user
+    // Load previous messages from database and send to the joining user (Supabase first, SQLite fallback)
     try {
-      const previousMessages = db.getMultiplayerMessages(sessionId, 100, 0);
+      let previousMessages = [];
+      if (supabaseConnected) {
+        previousMessages = await MultiplayerModel.getMessages(sessionId, 100, 0);
+        if (previousMessages && previousMessages.length > 0) {
+          console.log(`📜 Loading ${previousMessages.length} previous messages from Supabase for session ${sessionId}`);
+        }
+      }
+      // SQLite fallback if Supabase didn't return messages
+      if (previousMessages.length === 0) {
+        try {
+          previousMessages = db.getMultiplayerMessages(sessionId, 100, 0);
+          if (previousMessages && previousMessages.length > 0) {
+            console.log(`📜 Loading ${previousMessages.length} previous messages from SQLite for session ${sessionId}`);
+          }
+        } catch (sqliteError) {
+          console.error('❌ Failed to load chat history from SQLite:', sqliteError);
+        }
+      }
+      
       if (previousMessages && previousMessages.length > 0) {
-        console.log(`📜 Loading ${previousMessages.length} previous messages for session ${sessionId}`);
         // Send previous messages to the joining user
         socket.emit('chat-history', {
           sessionId,
@@ -484,6 +517,8 @@ io.on('connection', (socket) => {
             timestamp: msg.timestamp,
             playerName: msg.sender,
             type: msg.message_type || 'chat',
+            imageData: msg.image_data || msg.imageData,
+            imageUrl: msg.image_url || msg.imageUrl,
             sessionId: sessionId
           }))
         });
