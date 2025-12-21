@@ -994,21 +994,22 @@ app.post('/api/ai-companion/chat', validateMessage, validateCompanionConfig, asy
     } catch (dbError) {
       console.warn('⚠️  SQLite write failed, continuing without saving message:', dbError.message);
     }
-    // Get recent conversation history (prefer MongoDB, fallback to SQLite)
+    // Get recent conversation history (using SQLite, MongoDB disabled)
     let conversationContext = '';
-    if (mongoConnected && mongoConversation && mongoConversation.messages.length > 0) {
-      const mongoMessages = mongoConversation.messages.slice(-10);
-      conversationContext = mongoMessages.map(msg => `${msg.role === 'assistant' ? 'ai' : msg.role}: ${msg.content}`).join('\n');
-    } else {
-      // Fallback to SQLite conversation history
-      try {
-        const sqliteMessages = db.getRecentMessages(conversation.id, 10);
-        conversationContext = sqliteMessages.map(msg => `${msg.sender}: ${msg.content}`).join('\n');
-      } catch (dbError) {
-        console.warn('⚠️  SQLite history retrieval failed, using empty context:', dbError.message);
-        conversationContext = '';
-      }
+    // MongoDB is disabled - using SQLite for conversation history
+    // if (mongoConnected && mongoConversation && mongoConversation.messages.length > 0) {
+    //   const mongoMessages = mongoConversation.messages.slice(-10);
+    //   conversationContext = mongoMessages.map(msg => `${msg.role === 'assistant' ? 'ai' : msg.role}: ${msg.content}`).join('\n');
+    // } else {
+    // Fallback to SQLite conversation history
+    try {
+      const sqliteMessages = db.getRecentMessages(conversation.id, 10);
+      conversationContext = sqliteMessages.map(msg => `${msg.sender}: ${msg.content}`).join('\n');
+    } catch (dbError) {
+      console.warn('⚠️  SQLite history retrieval failed, using empty context:', dbError.message);
+      conversationContext = '';
     }
+    // }
     // Create enhanced context for the AI
     const context = `You are ${companionConfig.name}, an AI companion with the following characteristics:
 
@@ -1057,16 +1058,16 @@ Respond as ${companionConfig.name} with a personal, engaging response:`;
       }
     }
     if (aiResponse) {
-      // Save AI response to MongoDB (optional)
-      if (mongoConnected && mongoConversation) {
-        try {
-          mongoConversation.messages.push({ role: 'assistant', content: aiResponse, timestamp: new Date() });
-          mongoConversation.updatedAt = new Date();
-          await mongoConversation.save();
-        } catch (mongoError) {
-          console.warn('⚠️  MongoDB save failed, continuing with SQLite only:', mongoError.message);
-        }
-      }
+      // Save AI response to MongoDB (optional) - DISABLED (using Supabase)
+      // if (mongoConnected && mongoConversation) {
+      //   try {
+      //     mongoConversation.messages.push({ role: 'assistant', content: aiResponse, timestamp: new Date() });
+      //     mongoConversation.updatedAt = new Date();
+      //     await mongoConversation.save();
+      //   } catch (mongoError) {
+      //     console.warn('⚠️  MongoDB save failed, continuing with SQLite only:', mongoError.message);
+      //   }
+      // }
       
       // Save AI response to SQLite
       try {
@@ -1227,26 +1228,26 @@ app.get('/api/conversations/:sessionId', async (req, res) => {
   try {
     const { sessionId } = req.params;
     
-    // --- MongoDB: Fetch conversation (optional) ---
-    if (mongoConnected) {
-      try {
-        const mongoConversation = await AIConversation.findOne({ sessionId });
-        if (mongoConversation) {
-          return res.json({
-            conversation: {
-              sessionId: mongoConversation.sessionId,
-              companionConfig: mongoConversation.companionConfig,
-              createdAt: mongoConversation.createdAt,
-              updatedAt: mongoConversation.updatedAt
-            },
-            messages: mongoConversation.messages.map(msg => ({
-              sender: msg.role === 'assistant' ? 'ai' : msg.role,
-              content: msg.content,
-              timestamp: msg.timestamp
-            }))
-          });
-        }
-      } catch (mongoError) {
+    // --- MongoDB: Fetch conversation (optional) - DISABLED (using Supabase) ---
+    // if (mongoConnected) {
+    //   try {
+    //     const mongoConversation = await AIConversation.findOne({ sessionId });
+    //     if (mongoConversation) {
+    //       return res.json({
+    //         conversation: {
+    //           sessionId: mongoConversation.sessionId,
+    //           companionConfig: mongoConversation.companionConfig,
+    //           createdAt: mongoConversation.createdAt,
+    //           updatedAt: mongoConversation.updatedAt
+    //         },
+    //         messages: mongoConversation.messages.map(msg => ({
+    //           sender: msg.role === 'assistant' ? 'ai' : msg.role,
+    //           content: msg.content,
+    //           timestamp: msg.timestamp
+    //         }))
+    //       });
+    //     }
+    //   } catch (mongoError) {
         console.warn('⚠️  MongoDB fetch failed, falling back to SQLite:', mongoError.message);
       }
     }
