@@ -377,13 +377,16 @@ io.on('connection', (socket) => {
   // Join a specific session
   socket.on('join-session', (data) => {
     // Handle both old format (string) and new format (object)
-    const sessionId = typeof data === 'string' ? data : data.sessionId;
+    let sessionId = typeof data === 'string' ? data : data.sessionId;
     const playerName = typeof data === 'string' ? null : data.playerName;
     
     if (!sessionId || typeof sessionId !== 'string') {
       socket.emit('error', { message: 'Invalid session ID' });
       return;
     }
+    
+    // Trim whitespace from sessionId to prevent issues
+    sessionId = sessionId.trim();
     
     // Leave any previous sessions this socket was in
     for (const room of socket.rooms) {
@@ -441,8 +444,10 @@ io.on('connection', (socket) => {
     const room = io.sockets.adapter.rooms.get(sessionId);
     const roomSize = room ? room.size : 0;
     
-    console.log(`👥 User ${socket.playerName} (${socket.id}) joined session ${sessionId}`);
-    console.log(`📊 Session ${sessionId} now has ${session.participants.size} participants (room size: ${roomSize})`);
+    console.log(`👥 User ${socket.playerName} (${socket.id}) joined session "${sessionId}"`);
+    console.log(`📊 Session "${sessionId}" now has ${session.participants.size} participants (room size: ${roomSize})`);
+    console.log(`🔍 All active sessions:`, Array.from(sessions.keys()));
+    console.log(`🔍 Session "${sessionId}" participants:`, Array.from(session.participants));
     
     // Load previous messages from database and send to the joining user
     try {
