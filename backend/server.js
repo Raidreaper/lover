@@ -204,8 +204,10 @@ const corsOptions = {
     // Check both original and normalized versions
     const isAllowed = allowedOrigins.some(allowed => {
       const normalizedAllowed = allowed.endsWith('/') ? allowed.slice(0, -1) : allowed;
-      return origin === allowed || origin === normalizedAllowed || 
-             normalizedOrigin === allowed || normalizedOrigin === normalizedAllowed;
+      const match = origin === allowed || origin === normalizedAllowed || 
+             normalizedOrigin === allowed || normalizedOrigin === normalizedAllowed ||
+             origin.startsWith(allowed) || normalizedOrigin.startsWith(normalizedAllowed);
+      return match;
     });
     
     if (isAllowed) {
