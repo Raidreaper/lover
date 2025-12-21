@@ -900,7 +900,7 @@ const MultiplayerPage = () => {
     }
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Input validation
@@ -910,12 +910,12 @@ const MultiplayerPage = () => {
     }
     
     if (trimmedMessage.length > 2000) {
-      setMessages((prev) => [...prev, {
-        text: "❌ Message too long. Please keep it under 2000 characters.",
-        sender: "System",
-        timestamp: new Date()
-      }]);
+      toast.error('Message too long. Please keep it under 2000 characters.');
       return;
+    }
+    
+    if (isSendingMessage) {
+      return; // Prevent double-sending
     }
     
     if (socketRef.current && isConnected) {
@@ -930,29 +930,28 @@ const MultiplayerPage = () => {
       
       // Verify we're in a session
       if (!sessionId) {
-        setMessages((prev) => [...prev, {
-          text: "❌ No session ID. Please join a session first.",
-          sender: "System",
-          timestamp: new Date()
-        }]);
+        toast.error('No session ID. Please join a session first.');
         setIsSendingMessage(false);
         return;
       }
       
-      // Don't add locally - wait for broadcast to avoid duplicates
-      // The server will broadcast to all including sender, so we'll receive it via socket
-      
-      // Send to server (server will broadcast to all including sender)
-      socketRef.current.emit("chat message", { ...message, sessionId });
-      
-      setMessageInput("");
-      setIsSendingMessage(false);
+      try {
+        // Don't add locally - wait for broadcast to avoid duplicates
+        // The server will broadcast to all including sender, so we'll receive it via socket
+        socketRef.current.emit("chat message", { ...message, sessionId });
+        
+        // Clear input after sending
+        setMessageInput("");
+        // Small delay to show button feedback
+        await new Promise(resolve => setTimeout(resolve, 100));
+        setIsSendingMessage(false);
+      } catch (error) {
+        console.error('Error sending message:', error);
+        toast.error('Failed to send message. Please try again.');
+        setIsSendingMessage(false);
+      }
     } else {
-      setMessages((prev) => [...prev, {
-        text: "❌ Not connected to server. Please wait for connection.",
-        sender: "System",
-        timestamp: new Date()
-      }]);
+      toast.error('Not connected to server. Please wait for connection.');
     }
   };
 
