@@ -180,7 +180,13 @@ const buildAllowedOrigins = () => {
     // Use CORS_ORIGIN from env var, normalize trailing slash
     const corsOrigin = (CORS_ORIGIN || '').trim();
     const normalized = corsOrigin.endsWith('/') ? corsOrigin.slice(0, -1) : corsOrigin;
-    return normalized ? [normalized, corsOrigin] : ['https://lover-livid.vercel.app'];
+    // Always include both with and without trailing slash, and base domain
+    const origins = normalized ? [normalized, corsOrigin] : ['https://lover-livid.vercel.app'];
+    // Also add base domain without trailing slash
+    if (normalized && normalized !== 'https://lover-livid.vercel.app') {
+      origins.push('https://lover-livid.vercel.app');
+    }
+    return origins;
   }
   return ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081', 'http://localhost:3000'];
 };
