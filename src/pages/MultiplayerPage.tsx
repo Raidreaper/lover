@@ -1093,9 +1093,9 @@ const MultiplayerPage = () => {
   }
 
   return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 sm:p-4 flex items-center justify-between">
+        <div className="h-screen bg-gray-100 dark:bg-gray-900 flex flex-col overflow-hidden">
+      {/* Header - Fixed at top */}
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-2 sm:p-3 flex items-center justify-between flex-shrink-0 sticky top-0 z-20">
         <div className="flex items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
@@ -1182,8 +1182,8 @@ const MultiplayerPage = () => {
         />
       </div>
 
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
+      {/* Chat Messages - Only this area scrolls */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0">
         {messages.length === 0 && (
           <div className="text-center py-6 sm:py-8 text-gray-500">
             <Users className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 opacity-50" />
@@ -1355,20 +1355,25 @@ const MultiplayerPage = () => {
                 <Smile className="w-4 h-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-64">
-              <div className="grid grid-cols-5 gap-1">
-                {emojis.map((emoji, idx) => (
-                  <Button
-                    key={idx}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => sendEmoji(emoji)}
-                    className="text-lg hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                  >
-                    {emoji}
-                  </Button>
-                ))}
-        </div>
+            <PopoverContent className="w-[280px] sm:w-[320px] p-2" side="top" align="start">
+              <div className="max-h-[200px] sm:max-h-[240px] overflow-y-auto overflow-x-hidden">
+                <div className="grid grid-cols-5 gap-1 sm:gap-2">
+                  {emojis.map((emoji, idx) => (
+                    <Button
+                      key={idx}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        sendEmoji(emoji);
+                        setShowEmojiPicker(false);
+                      }}
+                      className="text-xl sm:text-2xl hover:bg-purple-100 dark:hover:bg-purple-900 p-1 sm:p-2 aspect-square h-auto w-full min-h-[40px] sm:min-h-[48px]"
+                    >
+                      {emoji}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             </PopoverContent>
           </Popover>
 
