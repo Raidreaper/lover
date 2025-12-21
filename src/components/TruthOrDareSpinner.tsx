@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RotateCcw, Zap, Heart, Sparkles, Target, Crown } from 'lucide-react';
+import { Socket } from 'socket.io-client';
 
 interface TruthOrDareItem {
   id: number;
@@ -12,11 +13,24 @@ interface TruthOrDareItem {
   category: string;
 }
 
-const TruthOrDareSpinner: React.FC = () => {
+interface TruthOrDareSpinnerProps {
+  socket?: Socket | null;
+  sessionId?: string;
+  playerName?: string;
+  multiplayer?: boolean;
+}
+
+const TruthOrDareSpinner: React.FC<TruthOrDareSpinnerProps> = ({ 
+  socket = null, 
+  sessionId = '', 
+  playerName = '',
+  multiplayer = false 
+}) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [currentResult, setCurrentResult] = useState<TruthOrDareItem | null>(null);
   const [spinHistory, setSpinHistory] = useState<TruthOrDareItem[]>([]);
   const [spinCount, setSpinCount] = useState(0);
+  const [spinningPlayer, setSpinningPlayer] = useState<string | null>(null);
   const spinnerRef = useRef<HTMLDivElement>(null);
 
   // Truth or Dare database
@@ -78,11 +92,62 @@ const TruthOrDareSpinner: React.FC = () => {
     { id: 40, type: 'dare', content: "Describe your perfect partner in detail", difficulty: 'medium', category: 'romantic' }
   ];
 
+  // Listen for multiplayer spin events
+  useEffect(() => {
+    if (!multiplayer || !socket || !sessionId) return;
+
+    const handleSpinStart = (data: { playerName: string; sessionId: string; timestamp: string }) => {
+      if (data.sessionId === sessionId && data.playerName !== playerName) {
+        setSpinningPlayer(data.playerName);
+        setIsSpinning(true);
+        setCurrentResult(null);
+        
+        // Add spinning animation
+        if (spinnerRef.current) {
+          spinnerRef.current.style.transform = 'rotate(3600deg)';
+          spinnerRef.current.style.transition = 'transform 3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        }
+      }
+    };
+
+    const handleSpinResult = (data: { result: TruthOrDareItem; playerName: string; sessionId: string; timestamp: string }) => {
+      if (data.sessionId === sessionId) {
+        setCurrentResult(data.result);
+        setSpinHistory(prev => [data.result, ...prev.slice(0, 4)]); // Keep last 5
+        setSpinCount(prev => prev + 1);
+        setIsSpinning(false);
+        setSpinningPlayer(null);
+        
+        // Reset spinner
+        if (spinnerRef.current) {
+          spinnerRef.current.style.transform = 'rotate(0deg)';
+          spinnerRef.current.style.transition = 'none';
+        }
+      }
+    };
+
+    socket.on('truth-or-dare-spin-start', handleSpinStart);
+    socket.on('truth-or-dare-spin-result', handleSpinResult);
+
+    return () => {
+      socket.off('truth-or-dare-spin-start', handleSpinStart);
+      socket.off('truth-or-dare-spin-result', handleSpinResult);
+    };
+  }, [multiplayer, socket, sessionId, playerName]);
+
   const spinWheel = () => {
     if (isSpinning) return;
     
     setIsSpinning(true);
     setCurrentResult(null);
+    
+    // Emit spin start event in multiplayer mode
+    if (multiplayer && socket && sessionId) {
+      socket.emit('truth-or-dare-spin-start', {
+        sessionId,
+        playerName
+      });
+    }
     
     // Add spinning animation
     if (spinnerRef.current) {
@@ -111,6 +176,15 @@ const TruthOrDareSpinner: React.FC = () => {
       setSpinHistory(prev => [randomItem, ...prev.slice(0, 4)]); // Keep last 5
       setSpinCount(prev => prev + 1);
       setIsSpinning(false);
+      
+      // Emit spin result event in multiplayer mode
+      if (multiplayer && socket && sessionId) {
+        socket.emit('truth-or-dare-spin-result', {
+          sessionId,
+          playerName,
+          result: randomItem
+        });
+      }
       
       // Reset spinner
       if (spinnerRef.current) {
@@ -153,7 +227,11 @@ const TruthOrDareSpinner: React.FC = () => {
             Truth or Dare Gacha Spinner
             <Crown className="h-6 w-6" />
           </CardTitle>
-          <p className="text-muted-foreground">Spin the wheel and discover your fate!</p>
+          <p className="text-muted-foreground">
+            {multiplayer && spinningPlayer && spinningPlayer !== playerName 
+              ? `${spinningPlayer} is spinning...` 
+              : 'Spin the wheel and discover your fate!'}
+          </p>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Spinner Wheel */}

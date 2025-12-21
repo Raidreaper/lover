@@ -579,6 +579,82 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Handle Truth or Dare spinner events
+  socket.on('truth-or-dare-spin-start', (data) => {
+    if (!data || !data.sessionId) {
+      socket.emit('error', { message: 'Invalid spin data' });
+      return;
+    }
+    
+    // Verify socket is in the session
+    if (!socket.rooms.has(data.sessionId)) {
+      console.warn(`⚠️  Socket ${socket.id} tried to spin in session ${data.sessionId} but is not in that room`);
+      socket.emit('error', { message: 'You are not in this session. Please rejoin.' });
+      return;
+    }
+    
+    const playerName = socket.playerName || data.playerName || 'Anonymous';
+    
+    console.log(`🎲 Truth or Dare spin started in session ${data.sessionId} by ${playerName}`);
+    
+    // Broadcast spin start to ALL users in the session
+    const room = io.sockets.adapter.rooms.get(data.sessionId);
+    if (room) {
+      io.to(data.sessionId).emit('truth-or-dare-spin-start', {
+        playerName: playerName,
+        sessionId: data.sessionId,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  socket.on('truth-or-dare-spin-result', (data) => {
+    if (!data || !data.sessionId || !data.result) {
+      socket.emit('error', { message: 'Invalid spin result data' });
+      return;
+    }
+    
+    // Verify socket is in the session
+    if (!socket.rooms.has(data.sessionId)) {
+      console.warn(`⚠️  Socket ${socket.id} tried to send spin result in session ${data.sessionId} but is not in that room`);
+      socket.emit('error', { message: 'You are not in this session. Please rejoin.' });
+      return;
+    }
+    
+    const playerName = socket.playerName || data.playerName || 'Anonymous';
+    
+    console.log(`🎲 Truth or Dare result in session ${data.sessionId} by ${playerName}: ${data.result.type} - ${data.result.content.substring(0, 50)}...`);
+    
+    // Update session activity
+    const session = sessions.get(data.sessionId);
+    if (session) {
+      session.lastActivity = Date.now();
+    }
+    
+    // Save result to database
+    try {
+      const messageText = `🎲 ${data.result.type === 'truth' ? 'Truth' : 'Dare'}: ${data.result.content}`;
+      db.addMultiplayerMessage(data.sessionId, playerName, messageText, 'game');
+    } catch (error) {
+      console.error('❌ Failed to save spin result to database:', error);
+    }
+    
+    // Broadcast result to ALL users in the session (so everyone sees it)
+    const room = io.sockets.adapter.rooms.get(data.sessionId);
+    if (room) {
+      console.log(`📤 Broadcasting Truth or Dare result to ${room.size} sockets in room ${data.sessionId}`);
+      io.to(data.sessionId).emit('truth-or-dare-spin-result', {
+        result: data.result,
+        playerName: playerName,
+        sessionId: data.sessionId,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      console.warn(`⚠️  Room ${data.sessionId} does not exist or is empty`);
+      socket.emit('error', { message: 'No participants in session' });
+    }
+  });
+
   // Handle disconnection
   socket.on('disconnect', () => {
     const playerName = socket.playerName || 'Anonymous';
@@ -1274,21 +1350,75 @@ app.get('/api/maintenance/size', (req, res) => {
 // Multiplayer API endpoints
 app.get('/api/multiplayer/sessions', (req, res) => {
   try {
-    const { limit = 20, offset = 0 } = req.query;
-    const sessions = db.getMultiplayerSessions(parseInt(limit), parseInt(offset));
+    const { limit = 20, offset = 0, activeOnly = 'false' } = req.query;
+    const sessionsList = db.getMultiplayerSessions(parseInt(limit), parseInt(offset));
+    
+    // Filter active sessions if requested
+    let filteredSessions = sessionsList;
+    if (activeOnly === 'true') {
+      filteredSessions = sessionsList.filter(s => s.is_active === 1);
+    }
+    
+    // Enrich with real-time participant count from in-memory sessions
+    const enrichedSessions = filteredSessions.map(session => {
+      const inMemorySession = sessions.get(session.session_id);
+      return {
+        ...session,
+        currentParticipants: inMemorySession ? inMemorySession.participants.size : 0
+      };
+    });
     
     res.json({
-      sessions,
+      sessions: enrichedSessions,
       pagination: {
         limit: parseInt(limit),
         offset: parseInt(offset),
-        total: sessions.length
+        total: enrichedSessions.length
       }
     });
   } catch (error) {
     console.error('❌ Error fetching multiplayer sessions:', error);
     monitor.logError(error, { endpoint: '/api/multiplayer/sessions' });
     res.status(500).json({ error: 'Failed to fetch multiplayer sessions' });
+  }
+});
+
+// Create a named multiplayer session
+app.post('/api/multiplayer/sessions', (req, res) => {
+  try {
+    const { title, sessionId } = req.body;
+    
+    if (!title || title.trim().length === 0) {
+      return res.status(400).json({ error: 'Session title is required' });
+    }
+    
+    // Generate session ID if not provided
+    const finalSessionId = sessionId || (() => {
+      const timestamp = Date.now().toString(36);
+      const random = Math.random().toString(36).substring(2, 6);
+      return `${timestamp}${random}`.toUpperCase();
+    })();
+    
+    // Create session in database
+    try {
+      db.createMultiplayerSession(finalSessionId, title.trim());
+      console.log(`📊 Created named multiplayer session: ${finalSessionId} - ${title.trim()}`);
+      
+      res.status(201).json({
+        sessionId: finalSessionId,
+        title: title.trim(),
+        message: 'Session created successfully'
+      });
+    } catch (error) {
+      if (error.message === 'Session already exists and is active') {
+        return res.status(409).json({ error: 'Session ID already exists' });
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error('❌ Error creating multiplayer session:', error);
+    monitor.logError(error, { endpoint: 'POST /api/multiplayer/sessions' });
+    res.status(500).json({ error: 'Failed to create session' });
   }
 });
 

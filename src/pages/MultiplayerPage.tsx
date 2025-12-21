@@ -14,6 +14,7 @@ import TruthOrDareSpinner from "@/components/TruthOrDareSpinner";
 import { useAuth } from "@/hooks/useAuth";
 import { SocketMessage } from "@/types/socket";
 import logger from "@/lib/logger";
+import API_ENDPOINTS from "@/config/api";
 
 const MultiplayerPage = () => {
   const navigate = useNavigate();
@@ -38,6 +39,11 @@ const MultiplayerPage = () => {
   const [showTruthOrDare, setShowTruthOrDare] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [showSessionBrowser, setShowSessionBrowser] = useState(false);
+  const [showCreateNamedSession, setShowCreateNamedSession] = useState(false);
+  const [sessionTitle, setSessionTitle] = useState("");
+  const [availableSessions, setAvailableSessions] = useState<any[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -868,6 +874,74 @@ const MultiplayerPage = () => {
     navigator.clipboard.writeText(sessionId);
   };
 
+  const loadAvailableSessions = async () => {
+    setIsLoadingSessions(true);
+    try {
+      const response = await fetch(`${API_ENDPOINTS.MULTIPLAYER_SESSIONS}?activeOnly=true&limit=20`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableSessions(data.sessions || []);
+      } else {
+        console.error('Failed to load sessions');
+      }
+    } catch (error) {
+      console.error('Error loading sessions:', error);
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  };
+
+  const createNamedSession = async () => {
+    if (!sessionTitle.trim()) return;
+    
+    setIsCreatingSession(true);
+    try {
+      const response = await fetch(API_ENDPOINTS.MULTIPLAYER_SESSIONS, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: sessionTitle.trim() }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSessionId(data.sessionId);
+        localStorage.setItem('multiplayerSessionId', data.sessionId);
+        setShowCreateNamedSession(false);
+        setSessionTitle("");
+        
+        // If user is not logged in, show name dialog
+        if (!user) {
+          setShowNameDialog(true);
+        } else {
+          setIsInSession(true);
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Failed to create session');
+      }
+    } catch (error) {
+      console.error('Error creating named session:', error);
+      alert('Failed to create session. Please try again.');
+    } finally {
+      setIsCreatingSession(false);
+    }
+  };
+
+  const joinSessionFromList = (selectedSessionId: string) => {
+    setSessionId(selectedSessionId);
+    localStorage.setItem('multiplayerSessionId', selectedSessionId);
+    setShowSessionBrowser(false);
+    
+    // If user is not logged in, show name dialog
+    if (!user) {
+      setShowNameDialog(true);
+    } else {
+      setIsInSession(true);
+    }
+  };
+
   if (!isInSession) {
   return (
       <div className="min-h-screen bg-gradient-to-br from-slate-100 via-purple-50 to-slate-200 dark:from-slate-900 dark:via-purple-900 dark:to-slate-800 flex items-center justify-center p-3 sm:p-4">
@@ -878,22 +952,47 @@ const MultiplayerPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 sm:space-y-4">
-            <Button
-              onClick={createNewSession}
-              loading={isCreatingSession}
-              loadingText="Creating..."
-              className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create New Session
-            </Button>
+            <div className="grid grid-cols-1 gap-2">
+              <Button
+                onClick={createNewSession}
+                loading={isCreatingSession}
+                loadingText="Creating..."
+                className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Quick Session
+              </Button>
+              
+              <Button
+                onClick={() => {
+                  setShowCreateNamedSession(true);
+                }}
+                variant="outline"
+                className="w-full border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+              >
+                <Hash className="w-4 h-4 mr-2" />
+                Create Named Session
+              </Button>
+              
+              <Button
+                onClick={async () => {
+                  setShowSessionBrowser(true);
+                  await loadAvailableSessions();
+                }}
+                variant="outline"
+                className="w-full border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Browse Sessions
+              </Button>
+            </div>
             
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">Or</span>
+                <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">Or Join by ID</span>
               </div>
             </div>
 
@@ -903,6 +1002,11 @@ const MultiplayerPage = () => {
                 onChange={(e) => setSessionId(e.target.value)}
                 placeholder="Enter Session ID"
                 className="border-purple-300 focus:border-purple-500"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && sessionId.trim()) {
+                    joinSession();
+                  }
+                }}
               />
               <Button 
                 onClick={joinSession}
@@ -915,7 +1019,7 @@ const MultiplayerPage = () => {
                 Join Session
               </Button>
             </div>
-              </CardContent>
+          </CardContent>
             </Card>
                 </div>
     );
@@ -1072,7 +1176,12 @@ const MultiplayerPage = () => {
               Truth or Dare
             </DialogTitle>
           </DialogHeader>
-          <TruthOrDareSpinner />
+          <TruthOrDareSpinner 
+            socket={socketRef.current}
+            sessionId={sessionId}
+            playerName={playerName}
+            multiplayer={isInSession && isConnected}
+          />
         </DialogContent>
       </Dialog>
 
