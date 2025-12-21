@@ -376,7 +376,7 @@ io.on('connection', (socket) => {
   monitor.updateConnectionCount(io.engine.clientsCount);
 
   // Join a specific session
-  socket.on('join-session', (data) => {
+  socket.on('join-session', async (data) => {
     // Handle both old format (string) and new format (object)
     let sessionId = typeof data === 'string' ? data : data.sessionId;
     const playerName = typeof data === 'string' ? null : data.playerName;
@@ -544,7 +544,7 @@ io.on('connection', (socket) => {
   });
 
   // Handle chat messages within a session
-  socket.on('chat message', (data) => {
+  socket.on('chat message', async (data) => {
     if (!data || !data.sessionId || (!data.text && !data.imageData && !data.imageUrl)) {
       socket.emit('error', { message: 'Invalid message data' });
       return;
@@ -637,7 +637,7 @@ io.on('connection', (socket) => {
   });
 
   // Handle question asking
-  socket.on('ask-question', (data) => {
+  socket.on('ask-question', async (data) => {
     if (!data || !data.sessionId || !data.question) {
       socket.emit('error', { message: 'Invalid question data' });
       return;
@@ -691,7 +691,7 @@ io.on('connection', (socket) => {
   });
 
   // Handle question answers
-  socket.on('question-answer', (data) => {
+  socket.on('question-answer', async (data) => {
     if (!data || !data.sessionId || !data.answer) {
       socket.emit('error', { message: 'Invalid answer data' });
       return;
@@ -755,7 +755,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('truth-or-dare-spin-result', (data) => {
+  socket.on('truth-or-dare-spin-result', async (data) => {
     if (!data || !data.sessionId || !data.result) {
       socket.emit('error', { message: 'Invalid spin result data' });
       return;
