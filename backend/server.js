@@ -552,7 +552,26 @@ io.on('connection', (socket) => {
           dbMessageType = 'emoji';
         }
       }
-      db.addMultiplayerMessage(data.sessionId, playerName, messageText || '', dbMessageType);
+      // Save to Supabase
+      if (supabaseConnected) {
+        await MultiplayerModel.addMessage(
+          data.sessionId,
+          playerName,
+          messageText || '',
+          dbMessageType,
+          null,
+          data.imageData || null,
+          data.imageUrl || null,
+          data.imageType || null
+        );
+      }
+      
+      // SQLite fallback
+      try {
+        db.addMultiplayerMessage(data.sessionId, playerName, messageText || '', dbMessageType);
+      } catch (sqliteError) {
+        console.error('❌ Failed to save message to SQLite:', sqliteError);
+      }
     } catch (error) {
       console.error('❌ Failed to save multiplayer message to database:', error);
     }
@@ -608,7 +627,16 @@ io.on('connection', (socket) => {
     
     // Save question to database
     try {
-      db.addMultiplayerMessage(data.sessionId, playerName, data.question, 'question');
+      // Save to Supabase
+      if (supabaseConnected) {
+        await MultiplayerModel.addMessage(data.sessionId, playerName, data.question, 'question');
+      }
+      // SQLite fallback
+      try {
+        db.addMultiplayerMessage(data.sessionId, playerName, data.question, 'question');
+      } catch (sqliteError) {
+        console.error('❌ Failed to save question to SQLite:', sqliteError);
+      }
     } catch (error) {
       console.error('❌ Failed to save question to database:', error);
     }
@@ -640,7 +668,16 @@ io.on('connection', (socket) => {
     
     // Save answer to database
     try {
-      db.addMultiplayerMessage(data.sessionId, playerName, data.answer, 'answer');
+      // Save to Supabase
+      if (supabaseConnected) {
+        await MultiplayerModel.addMessage(data.sessionId, playerName, data.answer, 'answer');
+      }
+      // SQLite fallback
+      try {
+        db.addMultiplayerMessage(data.sessionId, playerName, data.answer, 'answer');
+      } catch (sqliteError) {
+        console.error('❌ Failed to save answer to SQLite:', sqliteError);
+      }
     } catch (error) {
       console.error('❌ Failed to save answer to database:', error);
     }
@@ -712,7 +749,16 @@ io.on('connection', (socket) => {
     const messageText = `🎲 ${typeLabel} ${difficultyEmoji}: ${data.result.content}`;
     
     try {
-      db.addMultiplayerMessage(data.sessionId, playerName, messageText, 'game');
+        // Save to Supabase
+        if (supabaseConnected) {
+          await MultiplayerModel.addMessage(data.sessionId, playerName, messageText, 'game');
+        }
+        // SQLite fallback
+        try {
+          db.addMultiplayerMessage(data.sessionId, playerName, messageText, 'game');
+        } catch (sqliteError) {
+          console.error('❌ Failed to save game result to SQLite:', sqliteError);
+        }
     } catch (error) {
       console.error('❌ Failed to save spin result to database:', error);
     }
