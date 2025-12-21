@@ -612,34 +612,55 @@ const MultiplayerPage = () => {
       });
 
       socket.on("chat message", (msg: {text: string, sender: string, timestamp: string | Date, playerName?: string, type?: string, imageData?: string, imageUrl?: string, sessionId?: string}) => {
-        // Generate a unique ID for the message to prevent duplicates
-        const messageId = `${msg.sessionId || sessionId}-${msg.sender}-${msg.timestamp}-${msg.text || msg.imageData || msg.imageUrl}`;
-        
         // Convert timestamp to Date object if it's a string
+        const msgTimestamp = typeof msg.timestamp === 'string' ? new Date(msg.timestamp) : msg.timestamp;
+        const msgSender = msg.playerName || msg.sender;
+        const msgText = msg.text || '';
+        const msgImageData = msg.imageData || msg.imageUrl || '';
+        const msgType = msg.type || 'text';
+        
+        // Generate a more robust unique ID for the message to prevent duplicates
+        // Use content hash instead of exact timestamp to catch duplicates even with slight timestamp differences
+        const contentHash = `${msgText}${msgImageData}`.substring(0, 50); // First 50 chars of content
+        const messageId = `${msg.sessionId || sessionId}-${msgSender}-${contentHash}-${Math.floor(msgTimestamp.getTime() / 1000)}`; // Round to seconds
+        
         const messageWithDate = {
           ...msg,
           id: messageId,
-          timestamp: typeof msg.timestamp === 'string' ? new Date(msg.timestamp) : msg.timestamp,
-          sender: msg.playerName || msg.sender, // Use playerName if available, otherwise fallback to sender
-          type: msg.type || 'text',
+          timestamp: msgTimestamp,
+          sender: msgSender,
+          type: msgType,
           imageData: msg.imageData,
           imageUrl: msg.imageUrl
         };
         
-        // Prevent duplicate messages (in case sender's message was added locally and also received via broadcast)
+        // Prevent duplicate messages with improved detection
         setMessages((prev) => {
-          const isDuplicate = prev.some(m => 
-            (m.id === messageId) || (
-              m.text === messageWithDate.text && 
-              m.sender === messageWithDate.sender &&
-              m.type === messageWithDate.type &&
-              (m.imageData === messageWithDate.imageData || m.imageUrl === messageWithDate.imageUrl) &&
-              Math.abs(new Date(m.timestamp).getTime() - new Date(messageWithDate.timestamp).getTime()) < 1000
-            )
-          );
-          if (isDuplicate) {
-            return prev; // Don't add duplicate
+          // Check for exact ID match first (fastest)
+          if (prev.some(m => m.id === messageId)) {
+            console.log('🚫 Duplicate message detected (ID match):', messageId);
+            return prev;
           }
+          
+          // Check for content-based duplicates (same sender, same content, within 2 seconds)
+          const isDuplicate = prev.some(m => {
+            const timeDiff = Math.abs(new Date(m.timestamp).getTime() - msgTimestamp.getTime());
+            const sameSender = (m.sender === msgSender || m.playerName === msgSender);
+            const sameContent = (m.text === msgText && m.type === msgType);
+            const sameImage = (!msgImageData || (m.imageData === msg.imageData || m.imageUrl === msg.imageUrl));
+            
+            // If same sender, same content, and within 2 seconds, it's a duplicate
+            if (sameSender && sameContent && sameImage && timeDiff < 2000) {
+              return true;
+            }
+            return false;
+          });
+          
+          if (isDuplicate) {
+            console.log('🚫 Duplicate message detected (content match):', { sender: msgSender, text: msgText.substring(0, 20) });
+            return prev;
+          }
+          
           return [...prev, messageWithDate];
         });
       });
