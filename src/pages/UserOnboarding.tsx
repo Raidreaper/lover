@@ -164,7 +164,7 @@ const UserOnboarding: React.FC = () => {
                         value={formData.username}
                         onChange={handleInputChange}
                         placeholder="Enter your username"
-                        className="pl-10 bg-white/50 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                        className="pl-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:border-pink-300 focus:ring-pink-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                         required
                       />
                     </div>
@@ -183,7 +183,7 @@ const UserOnboarding: React.FC = () => {
                         value={formData.password}
                         onChange={handleInputChange}
                         placeholder="Enter your password"
-                        className="pl-10 pr-10 bg-white/50 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                        className="pl-10 pr-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:border-pink-300 focus:ring-pink-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                         required
                       />
                       <button
@@ -232,7 +232,7 @@ const UserOnboarding: React.FC = () => {
                         value={formData.username}
                         onChange={handleInputChange}
                         placeholder="Choose a username"
-                        className="pl-10 bg-white/50 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                        className="pl-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:border-pink-300 focus:ring-pink-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                         required
                         minLength={3}
                         maxLength={30}
@@ -253,7 +253,7 @@ const UserOnboarding: React.FC = () => {
                         value={formData.email}
                         onChange={handleInputChange}
                         placeholder="Enter your email"
-                        className="pl-10 bg-white/50 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                        className="pl-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:border-pink-300 focus:ring-pink-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                         required
                       />
                     </div>
@@ -272,7 +272,7 @@ const UserOnboarding: React.FC = () => {
                         value={formData.password}
                         onChange={handleInputChange}
                         placeholder="Create a password"
-                        className="pl-10 pr-10 bg-white/50 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                        className="pl-10 pr-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:border-pink-300 focus:ring-pink-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                         required
                         minLength={6}
                       />
@@ -330,7 +330,7 @@ const UserOnboarding: React.FC = () => {
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
                         placeholder="Confirm your password"
-                        className="pl-10 pr-10 bg-white/50 border-gray-200 focus:border-pink-300 focus:ring-pink-200"
+                        className="pl-10 pr-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:border-pink-300 focus:ring-pink-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                         required
                       />
                       <button
