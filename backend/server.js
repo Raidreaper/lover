@@ -408,30 +408,50 @@ io.on('connection', (socket) => {
     // Store player name with socket
     socket.playerName = playerName || 'Anonymous';
     
-    // Initialize session if it doesn't exist
+    // Initialize session if it doesn't exist in memory
     if (!sessions.has(sessionId)) {
+      console.log(`🆕 Creating new in-memory session: "${sessionId}"`);
       sessions.set(sessionId, { 
         participants: new Set(),
         lastActivity: Date.now()
       });
       
-      // Create session in database
+      // Check database for existing session before creating
       try {
-        db.createMultiplayerSession(sessionId, `Multiplayer Session ${sessionId}`);
-        console.log(`📊 Created multiplayer session in database: ${sessionId}`);
+        const existingSession = db.getMultiplayerSession(sessionId);
+        if (!existingSession) {
+          db.createMultiplayerSession(sessionId, `Multiplayer Session ${sessionId}`);
+          console.log(`📊 Created new multiplayer session in database: ${sessionId}`);
+        } else {
+          console.log(`📊 Session ${sessionId} already exists in database, using existing`);
+        }
       } catch (error) {
         // If session already exists, just log it
         if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-          console.log(`📊 Session ${sessionId} already exists in database`);
+          console.log(`📊 Session ${sessionId} already exists in database (constraint)`);
         } else {
           console.error('❌ Failed to create multiplayer session in database:', error);
         }
       }
+    } else {
+      console.log(`✅ Joining existing in-memory session: "${sessionId}" (current participants: ${sessions.get(sessionId).participants.size})`);
     }
     
     const session = sessions.get(sessionId);
+    if (!session) {
+      console.error(`❌ CRITICAL: Session "${sessionId}" not found after creation/retrieval!`);
+      socket.emit('error', { message: 'Failed to join session' });
+      return;
+    }
+    
+    // Add this socket to the session participants
+    const wasAlreadyInSession = session.participants.has(socket.id);
     session.participants.add(socket.id);
     session.lastActivity = Date.now();
+    
+    if (wasAlreadyInSession) {
+      console.log(`⚠️  Socket ${socket.id} was already in session "${sessionId}"`);
+    }
     
     // Update participant count in database
     try {
