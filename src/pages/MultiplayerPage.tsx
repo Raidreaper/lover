@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { SocketMessage } from "@/types/socket";
 import logger from "@/lib/logger";
 import API_ENDPOINTS from "@/config/api";
+import { toast } from "sonner";
 
 const MultiplayerPage = () => {
   const navigate = useNavigate();
