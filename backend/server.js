@@ -631,7 +631,7 @@ io.on('connection', (socket) => {
       session.lastActivity = Date.now();
     }
     
-    // Save result to database
+    // Save result to database and format as chat message
     const typeLabel = data.result.type === 'truth' ? 'Truth' : 'Dare';
     const difficultyEmoji = data.result.difficulty === 'easy' ? '🟢' : data.result.difficulty === 'medium' ? '🟡' : '🔴';
     const messageText = `🎲 ${typeLabel} ${difficultyEmoji}: ${data.result.content}`;
@@ -647,7 +647,7 @@ io.on('connection', (socket) => {
     if (room) {
       console.log(`📤 Broadcasting Truth or Dare result to ${room.size} sockets in room ${data.sessionId}`);
       
-      // Emit as Truth or Dare event
+      // Emit as Truth or Dare event (for spinner UI)
       io.to(data.sessionId).emit('truth-or-dare-spin-result', {
         result: data.result,
         playerName: playerName,
@@ -655,7 +655,7 @@ io.on('connection', (socket) => {
         timestamp: new Date().toISOString()
       });
       
-      // Also emit as a chat message so it appears in the chat (like number questions)
+      // Also emit as a chat message so it appears in chat (like number questions)
       const chatMessageData = {
         text: messageText,
         sender: playerName,
