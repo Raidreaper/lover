@@ -636,6 +636,18 @@ const MultiplayerPage = () => {
         }]);
       });
 
+      socket.on("truth-or-dare-spin-result", (data: {result: {type: string, content: string, difficulty: string}, playerName: string, sessionId: string, timestamp: string}) => {
+        const typeLabel = data.result.type === 'truth' ? 'Truth' : 'Dare';
+        const difficultyEmoji = data.result.difficulty === 'easy' ? '🟢' : data.result.difficulty === 'medium' ? '🟡' : '🔴';
+        const messageText = `🎲 ${typeLabel} ${difficultyEmoji}: ${data.result.content}`;
+        
+        setMessages((prev) => [...prev, {
+          text: messageText,
+          sender: data.playerName,
+          timestamp: new Date(data.timestamp || Date.now())
+        }]);
+      });
+
       return () => {
         if (socket) {
           socket.removeAllListeners();

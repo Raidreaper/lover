@@ -632,8 +632,11 @@ io.on('connection', (socket) => {
     }
     
     // Save result to database
+    const typeLabel = data.result.type === 'truth' ? 'Truth' : 'Dare';
+    const difficultyEmoji = data.result.difficulty === 'easy' ? '🟢' : data.result.difficulty === 'medium' ? '🟡' : '🔴';
+    const messageText = `🎲 ${typeLabel} ${difficultyEmoji}: ${data.result.content}`;
+    
     try {
-      const messageText = `🎲 ${data.result.type === 'truth' ? 'Truth' : 'Dare'}: ${data.result.content}`;
       db.addMultiplayerMessage(data.sessionId, playerName, messageText, 'game');
     } catch (error) {
       console.error('❌ Failed to save spin result to database:', error);
@@ -643,12 +646,26 @@ io.on('connection', (socket) => {
     const room = io.sockets.adapter.rooms.get(data.sessionId);
     if (room) {
       console.log(`📤 Broadcasting Truth or Dare result to ${room.size} sockets in room ${data.sessionId}`);
+      
+      // Emit as Truth or Dare event
       io.to(data.sessionId).emit('truth-or-dare-spin-result', {
         result: data.result,
         playerName: playerName,
         sessionId: data.sessionId,
         timestamp: new Date().toISOString()
       });
+      
+      // Also emit as a chat message so it appears in the chat (like number questions)
+      const chatMessageData = {
+        text: messageText,
+        sender: playerName,
+        timestamp: new Date().toISOString(),
+        playerName: playerName,
+        sessionId: data.sessionId,
+        type: 'game'
+      };
+      
+      io.to(data.sessionId).emit('chat message', chatMessageData);
     } else {
       console.warn(`⚠️  Room ${data.sessionId} does not exist or is empty`);
       socket.emit('error', { message: 'No participants in session' });
