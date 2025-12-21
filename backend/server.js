@@ -247,6 +247,8 @@ const validateCompanionConfig = (req, res, next) => {
   const { companionConfig } = req.body;
   
   if (!companionConfig) {
+    console.error('❌ Validation failed: companionConfig is missing from request body');
+    console.error('Request body keys:', Object.keys(req.body || {}));
     return res.status(400).json({ error: 'Companion configuration is required' });
   }
   
@@ -254,6 +256,8 @@ const validateCompanionConfig = (req, res, next) => {
   const missingFields = requiredFields.filter(field => !companionConfig[field]);
   
   if (missingFields.length > 0) {
+    console.error('❌ Validation failed: Missing required fields:', missingFields);
+    console.error('Received companionConfig:', JSON.stringify(companionConfig, null, 2));
     return res.status(400).json({ 
       error: 'Missing required fields', 
       missingFields 
@@ -302,12 +306,16 @@ const validateMessage = (req, res, next) => {
   const { message } = req.body;
   
   if (!message || typeof message !== 'string') {
+    console.error('❌ Validation failed: message is missing or invalid');
+    console.error('Request body keys:', Object.keys(req.body || {}));
+    console.error('Message value:', message);
     return res.status(400).json({ error: 'Valid message is required' });
   }
   
   const sanitizedMessage = String(message).trim().substring(0, 2000);
   
   if (sanitizedMessage.length === 0) {
+    console.error('❌ Validation failed: message is empty after sanitization');
     return res.status(400).json({ error: 'Message cannot be empty' });
   }
   
