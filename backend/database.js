@@ -134,7 +134,7 @@ class DatabaseManager {
         session_id TEXT NOT NULL,
         sender TEXT NOT NULL,
         content TEXT NOT NULL,
-        message_type TEXT DEFAULT 'chat' CHECK (message_type IN ('chat', 'question', 'answer', 'system', 'emoji')),
+        message_type TEXT DEFAULT 'chat' CHECK (message_type IN ('chat', 'question', 'answer', 'system', 'emoji', 'image', 'game')),
         question_number INTEGER,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (session_id) REFERENCES multiplayer_sessions (session_id) ON DELETE CASCADE

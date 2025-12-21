@@ -1252,6 +1252,7 @@ app.get('/api/conversations/:sessionId', async (req, res) => {
     const { sessionId } = req.params;
     
     // --- MongoDB: Fetch conversation (optional) - DISABLED (using Supabase) ---
+    // MongoDB is disabled - using SQLite for persistence
     // if (mongoConnected) {
     //   try {
     //     const mongoConversation = await AIConversation.findOne({ sessionId });
@@ -1271,9 +1272,9 @@ app.get('/api/conversations/:sessionId', async (req, res) => {
     //       });
     //     }
     //   } catch (mongoError) {
-        console.warn('⚠️  MongoDB fetch failed, falling back to SQLite:', mongoError.message);
-      }
-    }
+    //     console.warn('⚠️  MongoDB fetch failed, falling back to SQLite:', mongoError.message);
+    //   }
+    // }
     
     // --- Fallback to SQLite ---
     const conversation = db.getConversation(sessionId);
