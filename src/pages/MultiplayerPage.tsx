@@ -1489,7 +1489,7 @@ Let's connect and have fun together! 🎉`;
                 type="button" 
                 variant="outline" 
                 size="sm" 
-                className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
                 disabled={!isConnected}
               >
                 <Smile className="w-4 h-4" />
@@ -1523,12 +1523,14 @@ Let's connect and have fun together! 🎉`;
           />
           <Button 
             type="submit" 
-            loading={isSendingMessage}
-            loadingText="Sending..."
-            className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 px-3 sm:px-4"
-            disabled={!isConnected || !messageInput.trim()}
+            disabled={!messageInput.trim() || !isConnected || isSendingMessage}
+            className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-3 sm:px-4 transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
           >
-            <Send className="w-4 h-4" />
+            {isSendingMessage ? (
+              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </Button>
         </form>
       </div>
