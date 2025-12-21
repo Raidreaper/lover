@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Menu, X, Heart, Users, MessageCircle, Share2, Sparkles } from "lucide-react";
+import { Menu, X, Heart, Users, MessageCircle, Share2, Sparkles, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface HamburgerMenuProps {
   currentPage: 'solo' | 'multiplayer' | 'ai-companion';
