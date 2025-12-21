@@ -1231,6 +1231,32 @@ const MultiplayerPage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Truth or Dare Result Popup (fades away) */}
+      {truthOrDareResult && (
+        <div className={`fixed inset-0 z-50 flex items-center justify-center pointer-events-none transition-opacity duration-500 ${showTruthOrDarePopup ? 'opacity-100' : 'opacity-0'}`}>
+          <Card className="max-w-md mx-4 bg-gradient-to-br from-purple-500 to-pink-500 text-white border-2 border-purple-300 shadow-2xl pointer-events-auto animate-in fade-in zoom-in duration-300">
+            <CardContent className="p-6 text-center">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Crown className="h-6 w-6" />
+                <h3 className="text-xl font-bold">
+                  {truthOrDareResult.type === 'truth' ? 'Truth' : 'Dare'}
+                </h3>
+                <Crown className="h-6 w-6" />
+              </div>
+              <p className="text-lg mb-2 font-semibold">{truthOrDareResult.playerName} spun:</p>
+              <p className="text-base mb-3 bg-white/20 rounded-lg p-3 backdrop-blur-sm">{truthOrDareResult.content}</p>
+              <Badge className={`${
+                truthOrDareResult.difficulty === 'easy' ? 'bg-green-500' :
+                truthOrDareResult.difficulty === 'medium' ? 'bg-yellow-500' :
+                'bg-red-500'
+              } text-white`}>
+                {truthOrDareResult.difficulty}
+              </Badge>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Message Input */}
       <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
