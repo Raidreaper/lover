@@ -204,9 +204,19 @@ const ConversationHistory: React.FC = () => {
   if (error) {
     return (
       <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-red-600 bg-red-50 border border-red-200 rounded-lg p-6">
-            Error: {error}
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <div className="text-center max-w-md">
+            <div className="text-4xl mb-4">⚠️</div>
+            <h2 className="text-xl font-semibold text-red-600 mb-2">Something went wrong</h2>
+            <p className="text-red-600 mb-4">{error}</p>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={fetchConversations} variant="outline">
+                Try Again
+              </Button>
+              <Button onClick={() => navigate('/')} variant="outline">
+                Go Home
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -252,8 +262,24 @@ const ConversationHistory: React.FC = () => {
             <CardContent>
               <ScrollArea className="h-96">
                 {conversations.length === 0 ? (
-                  <div className="text-center text-gray-500 py-8">
-                    No conversations found
+                  <div className="flex flex-col items-center justify-center py-12 px-4">
+                    <MessageCircle className="h-16 w-16 text-gray-300 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                      {searchTerm ? 'No conversations found' : 'No conversations yet'}
+                    </h3>
+                    <p className="text-sm text-gray-500 text-center mb-4">
+                      {searchTerm 
+                        ? 'Try a different search term or clear your search'
+                        : 'Start chatting with an AI companion to see your conversation history here'}
+                    </p>
+                    {!searchTerm && (
+                      <Button 
+                        onClick={() => navigate('/ai-companion-onboarding')}
+                        className="mt-2"
+                      >
+                        Create AI Companion
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-2">

@@ -128,7 +128,7 @@ class UserModel {
     } catch (error) {
       console.error('❌ Supabase updateLastLogin error:', error.message);
       return null;
-    }
+  }
   }
 
   /**

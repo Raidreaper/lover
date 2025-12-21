@@ -437,7 +437,7 @@ io.on('connection', (socket) => {
 
   // Handle chat messages within a session
   socket.on('chat message', (data) => {
-    if (!data || !data.sessionId || !data.text) {
+    if (!data || !data.sessionId || (!data.text && !data.imageData && !data.imageUrl)) {
       socket.emit('error', { message: 'Invalid message data' });
       return;
     }
@@ -459,7 +459,10 @@ io.on('connection', (socket) => {
       return;
     }
     
-    console.log(`💬 Message in session ${data.sessionId} from ${playerName} (${socket.id}): ${data.text.substring(0, 50)}...`);
+    const messageType = data.type || (data.imageData || data.imageUrl ? 'image' : 'text');
+    const messageText = data.text || (messageType === 'image' ? '📷 Image' : '');
+    
+    console.log(`💬 ${messageType === 'image' ? '📷 Image' : 'Message'} in session ${data.sessionId} from ${playerName} (${socket.id})${messageText && messageText.length > 0 ? ': ' + messageText.substring(0, 50) + '...' : ''}`);
     console.log(`📊 Session ${data.sessionId} has ${session.participants.size} participants:`, Array.from(session.participants));
     
     // Update session activity
@@ -467,26 +470,38 @@ io.on('connection', (socket) => {
     
     // Save message to database
     try {
-      const messageType = data.text.length <= 2 && /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(data.text) ? 'emoji' : 'chat';
-      db.addMultiplayerMessage(data.sessionId, playerName, data.text, messageType);
+      let dbMessageType = 'chat';
+      if (messageType === 'image') {
+        dbMessageType = 'image';
+      } else if (messageText && messageText.length > 0) {
+        // Check if it's an emoji (short text with emoji characters)
+        if (messageText.length <= 2 && /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(messageText)) {
+          dbMessageType = 'emoji';
+        }
+      }
+      db.addMultiplayerMessage(data.sessionId, playerName, messageText || '', dbMessageType);
     } catch (error) {
       console.error('❌ Failed to save multiplayer message to database:', error);
     }
     
     // Prepare message object
     const messageData = {
-      text: data.text,
+      text: messageText,
       sender: playerName,
       timestamp: data.timestamp || new Date().toISOString(),
       playerName: playerName,
-      sessionId: data.sessionId
+      sessionId: data.sessionId,
+      type: messageType,
+      imageData: data.imageData || null,
+      imageUrl: data.imageUrl || null,
+      imageType: data.imageType || null
     };
     
     // Broadcast message to ALL users in the session (including sender for consistency)
     // Using io.to() instead of socket.to() to ensure all participants receive it
     const room = io.sockets.adapter.rooms.get(data.sessionId);
     if (room) {
-      console.log(`📤 Broadcasting to ${room.size} sockets in room ${data.sessionId}`);
+      console.log(`📤 Broadcasting ${messageType} message to ${room.size} sockets in room ${data.sessionId}`);
       io.to(data.sessionId).emit('chat message', messageData);
     } else {
       console.warn(`⚠️  Room ${data.sessionId} does not exist or is empty`);

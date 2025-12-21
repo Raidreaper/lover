@@ -10,16 +10,38 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Token storage utility - using sessionStorage for better security (cleared on tab close)
+const getStoredToken = (): string | null => {
+  try {
+    return sessionStorage.getItem('token');
+  } catch (error) {
+    logger.error('Failed to read token from storage:', error);
+    return null;
+  }
+};
+
+const setStoredToken = (token: string | null): void => {
+  try {
+    if (token) {
+      sessionStorage.setItem('token', token);
+    } else {
+      sessionStorage.removeItem('token');
+    }
+  } catch (error) {
+    logger.error('Failed to write token to storage:', error);
+  }
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [token, setToken] = useState<string | null>(getStoredToken());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Check if user is authenticated on mount
   useEffect(() => {
     const checkAuth = async () => {
-      const storedToken = localStorage.getItem('token');
+      const storedToken = getStoredToken();
       
       if (storedToken) {
         try {
@@ -37,13 +59,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           } else {
             // Token is invalid, remove it
             logger.log('Token validation failed, removing from storage');
-            localStorage.removeItem('token');
+            setStoredToken(null);
             setToken(null);
             setUser(null);
           }
         } catch (error) {
           logger.error('Auth check failed:', error);
-          localStorage.removeItem('token');
+          setStoredToken(null);
           setToken(null);
           setUser(null);
         }
@@ -75,7 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error(data.error || 'Login failed');
       }
 
-      localStorage.setItem('token', data.token);
+      setStoredToken(data.token);
       setToken(data.token);
       setUser(data.user);
     } catch (error) {
@@ -101,7 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error(data.error || 'Registration failed');
       }
 
-      localStorage.setItem('token', data.token);
+      setStoredToken(data.token);
       setToken(data.token);
       setUser(data.user);
     } catch (error) {
@@ -111,7 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    setStoredToken(null);
     setToken(null);
     setUser(null);
     setError(null);
@@ -119,7 +141,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Refresh authentication state (useful for page refreshes)
   const refreshAuth = useCallback(async () => {
-    const storedToken = localStorage.getItem('token');
+    const storedToken = getStoredToken();
     if (storedToken && !user) {
       try {
         const response = await fetch(API_ENDPOINTS.AUTH_ME, {

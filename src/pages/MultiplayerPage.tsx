@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Share2, Smile, Send, Hash, Copy, Users, Plus, Heart, MessageCircle } from "lucide-react";
+import { ArrowLeft, Share2, Smile, Send, Hash, Copy, Users, Plus, Heart, MessageCircle, Image as ImageIcon, Crown } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import HamburgerMenu from "@/components/HamburgerMenu";
+import TruthOrDareSpinner from "@/components/TruthOrDareSpinner";
 import { useAuth } from "@/hooks/useAuth";
 import { SocketMessage } from "@/types/socket";
 import logger from "@/lib/logger";
@@ -34,6 +35,10 @@ const MultiplayerPage = () => {
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [isJoiningSession, setIsJoiningSession] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [showTruthOrDare, setShowTruthOrDare] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -537,7 +542,7 @@ const MultiplayerPage = () => {
       });
 
       socket.emit("join-session", { sessionId, playerName: playerName || user?.username || "Anonymous" });
-      
+
       // Listen for session join confirmation
       socket.on("session-joined", (data: {sessionId: string, playerName: string, participantCount: number}) => {
         logger.log("Successfully joined session:", data);
@@ -570,20 +575,31 @@ const MultiplayerPage = () => {
         logger.log("Partner left:", data);
       });
 
-      socket.on("chat message", (msg: {text: string, sender: string, timestamp: string | Date, playerName?: string}) => {
+      socket.on("chat message", (msg: {text: string, sender: string, timestamp: string | Date, playerName?: string, type?: string, imageData?: string, imageUrl?: string, sessionId?: string}) => {
+        // Generate a unique ID for the message to prevent duplicates
+        const messageId = `${msg.sessionId || sessionId}-${msg.sender}-${msg.timestamp}-${msg.text || msg.imageData || msg.imageUrl}`;
+        
         // Convert timestamp to Date object if it's a string
         const messageWithDate = {
           ...msg,
+          id: messageId,
           timestamp: typeof msg.timestamp === 'string' ? new Date(msg.timestamp) : msg.timestamp,
-          sender: msg.playerName || msg.sender // Use playerName if available, otherwise fallback to sender
+          sender: msg.playerName || msg.sender, // Use playerName if available, otherwise fallback to sender
+          type: msg.type || 'text',
+          imageData: msg.imageData,
+          imageUrl: msg.imageUrl
         };
         
         // Prevent duplicate messages (in case sender's message was added locally and also received via broadcast)
         setMessages((prev) => {
           const isDuplicate = prev.some(m => 
-            m.text === messageWithDate.text && 
-            m.sender === messageWithDate.sender &&
-            Math.abs(new Date(m.timestamp).getTime() - new Date(messageWithDate.timestamp).getTime()) < 1000
+            (m.id === messageId) || (
+              m.text === messageWithDate.text && 
+              m.sender === messageWithDate.sender &&
+              m.type === messageWithDate.type &&
+              (m.imageData === messageWithDate.imageData || m.imageUrl === messageWithDate.imageUrl) &&
+              Math.abs(new Date(m.timestamp).getTime() - new Date(messageWithDate.timestamp).getTime()) < 1000
+            )
           );
           if (isDuplicate) {
             return prev; // Don't add duplicate
@@ -674,6 +690,80 @@ const MultiplayerPage = () => {
     }
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setMessages((prev) => [...prev, {
+        text: "❌ Please select an image file.",
+        sender: "System",
+        timestamp: new Date()
+      }]);
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessages((prev) => [...prev, {
+        text: "❌ Image size must be less than 5MB.",
+        sender: "System",
+        timestamp: new Date()
+      }]);
+      return;
+    }
+
+    // Convert to base64
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Image = event.target?.result as string;
+      setSelectedImage(base64Image);
+      sendImageMessage(base64Image, file.type);
+    };
+    reader.onerror = () => {
+      setMessages((prev) => [...prev, {
+        text: "❌ Failed to read image file.",
+        sender: "System",
+        timestamp: new Date()
+      }]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const sendImageMessage = (imageData: string, imageType: string) => {
+    if (socketRef.current && isConnected && sessionId) {
+      setIsUploadingImage(true);
+      const currentPlayerName = playerName || user?.username || "Anonymous";
+      const message = {
+        text: "📷 Image",
+        sender: currentPlayerName,
+        timestamp: new Date().toISOString(),
+        type: 'image',
+        imageData: imageData,
+        imageType: imageType
+      };
+
+      // Add message locally
+      setMessages((prev) => [...prev, { ...message, sender: currentPlayerName }]);
+
+      // Send to server
+      socketRef.current.emit("chat message", { ...message, sessionId });
+      
+      setSelectedImage(null);
+      setIsUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } else {
+      setMessages((prev) => [...prev, {
+        text: "❌ Not connected to server. Please wait for connection.",
+        sender: "System",
+        timestamp: new Date()
+      }]);
+    }
+  };
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -698,7 +788,8 @@ const MultiplayerPage = () => {
       const message = {
         text: trimmedMessage,
         sender: currentPlayerName,
-        timestamp: new Date().toISOString() // Use ISO string for consistency with backend
+        timestamp: new Date().toISOString(), // Use ISO string for consistency with backend
+        type: 'text'
       };
       
       // Verify we're in a session
@@ -947,7 +1038,21 @@ const MultiplayerPage = () => {
                     {isOwnMessage ? currentPlayerName : msg.sender}
                   </p>
                 )}
-                <p className="text-xs sm:text-sm">{msg.text}</p>
+                {msg.type === 'image' && (msg.imageData || msg.imageUrl) ? (
+                  <div className="space-y-2">
+                    <img 
+                      src={msg.imageData || msg.imageUrl || ''} 
+                      alt="Shared image" 
+                      className="max-w-full h-auto rounded-lg"
+                      style={{ maxHeight: '300px' }}
+                    />
+                    {msg.text && msg.text !== '📷 Image' && (
+                      <p className="text-xs sm:text-sm">{msg.text}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs sm:text-sm">{msg.text}</p>
+                )}
                 <p className="text-xs opacity-70 mt-1">
                   {msg.timestamp instanceof Date ? msg.timestamp.toLocaleTimeString() : new Date(msg.timestamp).toLocaleTimeString()}
                 </p>
@@ -958,9 +1063,55 @@ const MultiplayerPage = () => {
         <div ref={chatEndRef} />
       </div>
 
+      {/* Truth or Dare Dialog */}
+      <Dialog open={showTruthOrDare} onOpenChange={setShowTruthOrDare}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5" />
+              Truth or Dare
+            </DialogTitle>
+          </DialogHeader>
+          <TruthOrDareSpinner />
+        </DialogContent>
+      </Dialog>
+
       {/* Message Input */}
       <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!isConnected || isUploadingImage}
+            className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+            title="Send image"
+          >
+            {isUploadingImage ? (
+              <div className="animate-spin h-4 w-4 border-2 border-purple-500 border-t-transparent rounded-full" />
+            ) : (
+              <ImageIcon className="w-4 h-4" />
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTruthOrDare(true)}
+            disabled={!isConnected}
+            className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+            title="Truth or Dare"
+          >
+            <Crown className="w-4 h-4" />
+          </Button>
           <Popover open={showNumberSelector} onOpenChange={setShowNumberSelector}>
             <PopoverTrigger asChild>
               <Button 

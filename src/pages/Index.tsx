@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Heart, Sparkles, ArrowRight, Star, Moon, Sun, Cloud, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import ThemeToggle from "@/components/ThemeToggle";
 import logger from "@/lib/logger";
 
 const Index = () => {
@@ -88,16 +89,19 @@ const Index = () => {
       </div>
 
               <main className="relative z-10 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
-        {/* Time and Weather Indicator */}
-        <div className="absolute top-4 sm:top-6 right-4 sm:right-6 flex items-center gap-2 text-slate-600 dark:text-slate-300">
-          {isNight ? <Moon className="w-4 h-4 sm:w-5 sm:h-5" /> : <Sun className="w-4 h-4 sm:w-5 sm:h-5" />}
-          <span className="text-xs sm:text-sm font-medium">
-            {currentTime.toLocaleTimeString('en-US', { 
-              hour: '2-digit', 
-              minute: '2-digit',
-              hour12: true 
-            })}
-          </span>
+        {/* Time and Weather Indicator with Theme Toggle */}
+        <div className="absolute top-4 sm:top-6 right-4 sm:right-6 flex items-center gap-3">
+          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+            {isNight ? <Moon className="w-4 h-4 sm:w-5 sm:h-5" /> : <Sun className="w-4 h-4 sm:w-5 sm:h-5" />}
+            <span className="text-xs sm:text-sm font-medium">
+              {currentTime.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+              })}
+            </span>
+          </div>
+          <ThemeToggle />
         </div>
 
                 {/* Main Content */}

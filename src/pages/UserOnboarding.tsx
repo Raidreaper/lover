@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
 import { useAuth } from '@/hooks/useAuth';
-import { Heart, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Heart, User, Mail, Lock, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
+import { validatePassword, getPasswordStrengthLabel, getPasswordStrengthColor } from '@/lib/password-validator';
 
 const UserOnboarding: React.FC = () => {
   const navigate = useNavigate();
@@ -23,16 +25,72 @@ const UserOnboarding: React.FC = () => {
   });
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Password strength validation
+  const passwordStrength = useMemo(() => {
+    if (formData.password && activeTab === 'register') {
+      return validatePassword(formData.password);
+    }
+    return null;
+  }, [formData.password, activeTab]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
+    // Clear validation errors when user types
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (activeTab === 'register') {
+      if (formData.username.length < 3) {
+        errors.username = 'Username must be at least 3 characters';
+      }
+      if (formData.username.length > 30) {
+        errors.username = 'Username must be less than 30 characters';
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        errors.email = 'Please enter a valid email address';
+      }
+      if (passwordStrength && !passwordStrength.isValid) {
+        errors.password = 'Password does not meet requirements';
+      }
+      if (formData.password !== formData.confirmPassword) {
+        errors.confirmPassword = 'Passwords do not match';
+      }
+    } else {
+      if (formData.username.length < 3) {
+        errors.username = 'Username must be at least 3 characters';
+      }
+      if (formData.password.length < 6) {
+        errors.password = 'Password must be at least 6 characters';
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsLoggingIn(true);
     try {
       await login(formData.username, formData.password);
@@ -47,7 +105,7 @@ const UserOnboarding: React.FC = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formData.password !== formData.confirmPassword) {
+    if (!validateForm()) {
       return;
     }
     
@@ -226,6 +284,37 @@ const UserOnboarding: React.FC = () => {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    {formData.password && passwordStrength && (
+                      <div className="space-y-2 mt-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600">Password strength:</span>
+                          <span className={`font-medium ${passwordStrength.score >= 3 ? 'text-green-600' : passwordStrength.score >= 2 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            {getPasswordStrengthLabel(passwordStrength.score)}
+                          </span>
+                        </div>
+                        <Progress 
+                          value={(passwordStrength.score / 4) * 100} 
+                          className="h-2"
+                        />
+                        {passwordStrength.feedback.length > 0 && (
+                          <ul className="text-xs text-gray-600 space-y-1 mt-1">
+                            {passwordStrength.feedback.map((msg, idx) => (
+                              <li key={idx} className="flex items-center gap-1">
+                                {passwordStrength.score >= 3 ? (
+                                  <CheckCircle2 className="w-3 h-3 text-green-500" />
+                                ) : (
+                                  <XCircle className="w-3 h-3 text-red-500" />
+                                )}
+                                {msg}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                    {validationErrors.password && (
+                      <p className="text-xs text-red-600 mt-1">{validationErrors.password}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -252,6 +341,9 @@ const UserOnboarding: React.FC = () => {
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    {validationErrors.confirmPassword && (
+                      <p className="text-xs text-red-600 mt-1">{validationErrors.confirmPassword}</p>
+                    )}
                   </div>
 
                   {formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
@@ -272,7 +364,7 @@ const UserOnboarding: React.FC = () => {
 
                   <Button
                     type="submit"
-                    disabled={loading || isRegistering || formData.password !== formData.confirmPassword}
+                    disabled={loading || isRegistering || formData.password !== formData.confirmPassword || (passwordStrength && !passwordStrength.isValid)}
                     loading={isRegistering}
                     loadingText="Creating Account..."
                     className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
