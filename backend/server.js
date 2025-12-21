@@ -46,6 +46,9 @@ app.set('trust proxy', 1);
 const monitor = new ServerMonitor();
 const db = new DatabaseManager();
 
+// MongoDB connection status (set to false since we're using Supabase)
+const mongoConnected = false;
+
 // Initialize Gemini AI with error handling
 let genAI, model;
 try {
@@ -56,8 +59,24 @@ try {
     model = null;
   } else {
     genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    console.log('✅ Gemini AI initialized with API key');
+    // Try gemini-pro first (most widely available), then fallback to other models
+    try {
+      model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      console.log('✅ Gemini AI initialized with API key (model: gemini-pro)');
+    } catch (modelError) {
+      try {
+        model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        console.log('✅ Gemini AI initialized with API key (model: gemini-1.5-pro)');
+      } catch (fallbackError) {
+        try {
+          model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+          console.log('✅ Gemini AI initialized with API key (model: gemini-1.5-flash)');
+        } catch (finalError) {
+          console.error('❌ Failed to initialize any Gemini model:', finalError.message);
+          model = null;
+        }
+      }
+    }
   }
 } catch (error) {
   console.error('❌ Failed to initialize Gemini AI:', error.message);
@@ -919,32 +938,31 @@ app.post('/api/ai-companion/chat', validateMessage, validateCompanionConfig, asy
     const { sessionId, conversationId } = req.body;
     const message = req.sanitizedMessage;
     const companionConfig = req.sanitizedConfig;
-    // --- MongoDB: Find conversation (optional) ---
+    // --- MongoDB: Find conversation (optional) - DISABLED (using Supabase) ---
     let mongoConversation = null;
-    if (mongoConnected && sessionId) {
-      try {
-        mongoConversation = await AIConversation.findOne({ sessionId });
-        if (!mongoConversation && sessionId && conversationId) {
-          // If not found, create new (only if we have valid IDs)
-          mongoConversation = await AIConversation.create({
-            sessionId,
-            conversationId,
-            companionConfig,
-            messages: [],
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
-        }
-        // Save user message to MongoDB if conversation exists
-        if (mongoConversation) {
-          mongoConversation.messages.push({ role: 'user', content: message, timestamp: new Date() });
-          mongoConversation.updatedAt = new Date();
-          await mongoConversation.save();
-        }
-      } catch (mongoError) {
-        console.warn('⚠️  MongoDB operation failed, continuing with SQLite only:', mongoError.message);
-      }
-    }
+    // MongoDB is disabled - using Supabase for persistence
+    // if (mongoConnected && sessionId) {
+    //   try {
+    //     mongoConversation = await AIConversation.findOne({ sessionId });
+    //     if (!mongoConversation && sessionId && conversationId) {
+    //       mongoConversation = await AIConversation.create({
+    //         sessionId,
+    //         conversationId,
+    //         companionConfig,
+    //         messages: [],
+    //         createdAt: new Date(),
+    //         updatedAt: new Date()
+    //       });
+    //     }
+    //     if (mongoConversation) {
+    //       mongoConversation.messages.push({ role: 'user', content: message, timestamp: new Date() });
+    //       mongoConversation.updatedAt = new Date();
+    //       await mongoConversation.save();
+    //     }
+    //   } catch (mongoError) {
+    //     console.warn('⚠️  MongoDB operation failed, continuing with SQLite only:', mongoError.message);
+    //   }
+    // }
     // --- SQLite (legacy/local) ---
     let conversation = null;
     if (sessionId) {
@@ -1075,14 +1093,15 @@ Respond as ${companionConfig.name} with a personal, engaging response:`;
     
     let fallbackResponse = "I'm here for you! What's on your mind?";
     
-    // Context-aware fallback responses
-    if (message.toLowerCase().includes('hello') || message.toLowerCase().includes('hi')) {
+    // Context-aware fallback responses (use req.sanitizedMessage)
+    const userMessage = req.sanitizedMessage || '';
+    if (userMessage.toLowerCase().includes('hello') || userMessage.toLowerCase().includes('hi')) {
       fallbackResponse = `Hi there! I'm ${companionName} and I'm ${personality}. How are you feeling today?`;
-    } else if (message.toLowerCase().includes('how are you')) {
+    } else if (userMessage.toLowerCase().includes('how are you')) {
       fallbackResponse = `I'm doing great, thank you for asking! I'm here and ready to chat with you. How about you?`;
-    } else if (message.toLowerCase().includes('thank')) {
+    } else if (userMessage.toLowerCase().includes('thank')) {
       fallbackResponse = `You're very welcome! I'm here for you whenever you need to talk.`;
-    } else if (message.toLowerCase().includes('bye') || message.toLowerCase().includes('goodbye')) {
+    } else if (userMessage.toLowerCase().includes('bye') || userMessage.toLowerCase().includes('goodbye')) {
       fallbackResponse = `Take care! I'll be here when you want to chat again.`;
     }
     
