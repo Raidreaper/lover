@@ -1201,8 +1201,14 @@ const MultiplayerPage = () => {
                     
                     <Button
                       onClick={() => {
-                        const message = encodeURIComponent(`🎉 Join me on Lover's Code! Use session code: ${sessionId}\n\nLet's connect and have fun together! 💕`);
-                        window.open(`https://www.snapchat.com/scan?attachmentUrl=${encodeURIComponent(window.location.origin + '/multiplayer?session=' + sessionId)}`, '_blank');
+                        const message = `🎉 Join me on Lover's Code! Use session code: ${sessionId}\n\nLet's connect and have fun together! 💕`;
+                        navigator.clipboard.writeText(message).then(() => {
+                          toast.success('Invitation copied! Paste it in Snapchat to share.');
+                          // Try to open Snapchat web
+                          window.open('https://web.snapchat.com/', '_blank');
+                        }).catch(() => {
+                          toast.error('Failed to copy. Please copy the session code manually.');
+                        });
                       }}
                       className="w-full bg-[#FFFC00] hover:bg-[#FFE500] text-black font-medium"
                     >
