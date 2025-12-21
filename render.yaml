@@ -3,7 +3,7 @@ services:
     name: lover
     runtime: node
     rootDir: backend
-    buildCommand: npm install
+    buildCommand: cd backend && npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV
