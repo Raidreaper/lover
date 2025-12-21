@@ -185,7 +185,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
                         <div className="flex items-center gap-2 p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
                           <Badge variant="secondary" className="font-mono text-lg px-3 py-1">{sessionId}</Badge>
                           <Button size="sm" onClick={copySessionId} className="ml-auto">
-                            <Share2 className="w-4 h-4 mr-1" />
+                            <Copy className="w-4 h-4 mr-1" />
                             Copy Code
                           </Button>
                         </div>
