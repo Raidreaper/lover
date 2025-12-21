@@ -498,6 +498,20 @@ const MultiplayerPage = () => {
   "🎏", "🎐", "🎀", "🎁", "🎗️", "🎟️", "🎫", "🎖️", "🏆", "🏅", "🥇", "🥈", "🥉", "⚽", "⚾", "🥎", "🏀", "🏈", "⚽", "🏉", "🎾", "🥏"
 ];
 
+  // Clear old cache on mount to ensure fresh state
+  useEffect(() => {
+    // Clear any stale cache entries
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          if (name.includes('lover') || name.includes('multiplayer')) {
+            caches.delete(name);
+          }
+        });
+      });
+    }
+  }, []);
+
   // Restore session from localStorage on page load and auto-rejoin
   useEffect(() => {
     const savedSessionId = localStorage.getItem('multiplayerSessionId');
@@ -728,42 +742,79 @@ const MultiplayerPage = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const createNewSession = () => {
-    setIsCreatingSession(true);
-    // Generate a more unique session ID with timestamp
-    const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substring(2, 6);
-    const newSessionId = `${timestamp}${random}`.toUpperCase();
-    setSessionId(newSessionId);
-    
-    // Save session to localStorage
-    localStorage.setItem('multiplayerSessionId', newSessionId);
-    
-    // If user is not logged in, show name dialog
-    if (!user) {
-      setShowNameDialog(true);
-    } else {
-      setIsInSession(true);
+  const createNewSession = async () => {
+    if (isCreatingSession) {
+      return; // Prevent double-clicking
     }
-    setIsCreatingSession(false);
-  };
-
-  const joinSession = () => {
-    if (sessionId.trim()) {
-      setIsJoiningSession(true);
+    
+    setIsCreatingSession(true);
+    
+    try {
+      // Generate a more unique session ID with timestamp
+      const timestamp = Date.now().toString(36);
+      const random = Math.random().toString(36).substring(2, 6);
+      const newSessionId = `${timestamp}${random}`.toUpperCase();
+      setSessionId(newSessionId);
       
       // Save session to localStorage for persistence
-      localStorage.setItem('multiplayerSessionId', sessionId);
+      localStorage.setItem('multiplayerSessionId', newSessionId);
       if (playerName || user?.username) {
         localStorage.setItem('multiplayerPlayerName', playerName || user?.username || 'Anonymous');
       }
       
+      // Small delay to show loading state
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       // If user is not logged in, show name dialog
       if (!user) {
         setShowNameDialog(true);
+        setIsCreatingSession(false);
       } else {
         setIsInSession(true);
+        setIsCreatingSession(false);
+        toast.success('Session created!');
       }
+    } catch (error) {
+      console.error('Error creating session:', error);
+      toast.error('Failed to create session. Please try again.');
+      setIsCreatingSession(false);
+    }
+  };
+
+  const joinSession = async () => {
+    if (!sessionId.trim()) {
+      toast.error('Please enter a session code');
+      return;
+    }
+    
+    if (isJoiningSession) {
+      return; // Prevent double-clicking
+    }
+    
+    setIsJoiningSession(true);
+    
+    try {
+      // Save session to localStorage for persistence
+      localStorage.setItem('multiplayerSessionId', sessionId.trim());
+      if (playerName || user?.username) {
+        localStorage.setItem('multiplayerPlayerName', playerName || user?.username || 'Anonymous');
+      }
+      
+      // Small delay to show loading state
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // If user is not logged in, show name dialog
+      if (!user) {
+        setShowNameDialog(true);
+        setIsJoiningSession(false);
+      } else {
+        setIsInSession(true);
+        setIsJoiningSession(false);
+        toast.success('Joining session...');
+      }
+    } catch (error) {
+      console.error('Error joining session:', error);
+      toast.error('Failed to join session. Please try again.');
       setIsJoiningSession(false);
     }
   };
@@ -1036,10 +1087,11 @@ const MultiplayerPage = () => {
                 onClick={createNewSession}
                 loading={isCreatingSession}
                 loadingText="Creating..."
-                className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
+                disabled={isCreatingSession}
+                className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Create Quick Session
+                {isCreatingSession ? 'Creating...' : 'Create Quick Session'}
               </Button>
               
               <Button
@@ -1091,11 +1143,11 @@ const MultiplayerPage = () => {
                 onClick={joinSession}
                 loading={isJoiningSession}
                 loadingText="Joining..."
-                className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
-                disabled={!sessionId.trim()}
+                disabled={!sessionId.trim() || isJoiningSession}
+                className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
               >
                 <Users className="w-4 h-4 mr-2" />
-                Join Session
+                {isJoiningSession ? 'Joining...' : 'Join Session'}
               </Button>
             </div>
           </CardContent>
