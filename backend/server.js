@@ -70,7 +70,7 @@ try {
         console.log('✅ Gemini AI initialized with API key (model: gemini-1.5-pro)');
       } catch (fallbackError) {
         try {
-          model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
           console.log('✅ Gemini AI initialized with API key (model: gemini-1.5-flash)');
         } catch (finalError) {
           console.error('❌ Failed to initialize any Gemini model:', finalError.message);
@@ -429,16 +429,16 @@ io.on('connection', (socket) => {
         try {
           const existingSession = db.getMultiplayerSession(sessionId);
           if (!existingSession) {
-            db.createMultiplayerSession(sessionId, `Multiplayer Session ${sessionId}`);
+        db.createMultiplayerSession(sessionId, `Multiplayer Session ${sessionId}`);
             console.log(`📊 Created new multiplayer session in SQLite: ${sessionId}`);
           }
         } catch (sqliteError) {
           if (sqliteError.code === 'SQLITE_CONSTRAINT_UNIQUE') {
             console.log(`📊 Session ${sessionId} already exists in SQLite`);
-          } else {
+        } else {
             console.error('❌ Failed to create multiplayer session in SQLite:', sqliteError);
-          }
         }
+      }
       } catch (error) {
         console.error('❌ Failed to create multiplayer session:', error);
       }
@@ -468,8 +468,8 @@ io.on('connection', (socket) => {
         await MultiplayerModel.updateParticipantCount(sessionId, session.participants.size);
       }
       // SQLite fallback
-      try {
-        db.updateMultiplayerParticipantCount(sessionId, session.participants.size);
+    try {
+      db.updateMultiplayerParticipantCount(sessionId, session.participants.size);
       } catch (sqliteError) {
         console.error('❌ Failed to update participant count in SQLite:', sqliteError);
       }
@@ -667,8 +667,8 @@ io.on('connection', (socket) => {
         await MultiplayerModel.addMessage(data.sessionId, playerName, data.question, 'question');
       }
       // SQLite fallback
-      try {
-        db.addMultiplayerMessage(data.sessionId, playerName, data.question, 'question');
+    try {
+      db.addMultiplayerMessage(data.sessionId, playerName, data.question, 'question');
       } catch (sqliteError) {
         console.error('❌ Failed to save question to SQLite:', sqliteError);
       }
@@ -681,10 +681,10 @@ io.on('connection', (socket) => {
     if (room) {
       console.log(`📤 Broadcasting question to ${room.size} sockets in room ${data.sessionId}`);
       io.to(data.sessionId).emit('question-asked', {
-        question: data.question,
+      question: data.question,
         playerName: playerName,
         sessionId: data.sessionId
-      });
+    });
     } else {
       console.warn(`⚠️  Room ${data.sessionId} does not exist for question`);
     }
@@ -708,8 +708,8 @@ io.on('connection', (socket) => {
         await MultiplayerModel.addMessage(data.sessionId, playerName, data.answer, 'answer');
       }
       // SQLite fallback
-      try {
-        db.addMultiplayerMessage(data.sessionId, playerName, data.answer, 'answer');
+    try {
+      db.addMultiplayerMessage(data.sessionId, playerName, data.answer, 'answer');
       } catch (sqliteError) {
         console.error('❌ Failed to save answer to SQLite:', sqliteError);
       }
@@ -1131,14 +1131,14 @@ app.post('/api/ai-companion/chat', validateMessage, validateCompanionConfig, asy
     //   const mongoMessages = mongoConversation.messages.slice(-10);
     //   conversationContext = mongoMessages.map(msg => `${msg.role === 'assistant' ? 'ai' : msg.role}: ${msg.content}`).join('\n');
     // } else {
-    // Fallback to SQLite conversation history
-    try {
-      const sqliteMessages = db.getRecentMessages(conversation.id, 10);
-      conversationContext = sqliteMessages.map(msg => `${msg.sender}: ${msg.content}`).join('\n');
-    } catch (dbError) {
-      console.warn('⚠️  SQLite history retrieval failed, using empty context:', dbError.message);
-      conversationContext = '';
-    }
+      // Fallback to SQLite conversation history
+      try {
+        const sqliteMessages = db.getRecentMessages(conversation.id, 10);
+        conversationContext = sqliteMessages.map(msg => `${msg.sender}: ${msg.content}`).join('\n');
+      } catch (dbError) {
+        console.warn('⚠️  SQLite history retrieval failed, using empty context:', dbError.message);
+        conversationContext = '';
+      }
     // }
     // Create enhanced context for the AI
     const context = `You are ${companionConfig.name}, an AI companion with the following characteristics:
@@ -1275,9 +1275,9 @@ const gracefulShutdown = (signal) => {
     // Close database connections
     // Supabase uses HTTP connections, no need to close
     // Close SQLite database
-    db.close();
-    console.log('✅ SQLite database closed');
-    process.exit(0);
+      db.close();
+      console.log('✅ SQLite database closed');
+      process.exit(0);
   });
   
   // Force close after 10 seconds
@@ -1742,37 +1742,37 @@ app.post('/api/auth/register', async (req, res) => {
         const existingUserByEmail = await User.findOne({ email });
 
         if (existingUserByUsername || existingUserByEmail) {
-          return res.status(409).json({ error: 'Username or email already exists' });
-        }
+      return res.status(409).json({ error: 'Username or email already exists' });
+    }
 
-        // Hash password
-        const saltRounds = 12;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
+    // Hash password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
         // Create user in Supabase
         const user = await User.create({
-          username,
-          email,
+      username,
+      email,
           password: hashedPassword
-        });
+    });
 
-        // Generate JWT token
-        const token = jwt.sign(
+    // Generate JWT token
+    const token = jwt.sign(
           { userId: user.id, username: user.username },
-          JWT_SECRET,
-          { expiresIn: '7d' }
-        );
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
 
         return res.status(201).json({
-          message: 'User registered successfully',
-          token,
-          user: {
+      message: 'User registered successfully',
+      token,
+      user: {
             id: user.id,
-            username: user.username,
-            email: user.email,
-            createdAt: user.createdAt
-          }
-        });
+        username: user.username,
+        email: user.email,
+        createdAt: user.createdAt
+      }
+    });
       } catch (supabaseError) {
         console.warn('⚠️  Supabase registration failed, falling back to SQLite:', supabaseError.message);
       }
@@ -1842,37 +1842,37 @@ app.post('/api/auth/login', async (req, res) => {
         // Find user in Supabase
         const user = await User.findOne({ username });
 
-        if (!user) {
-          return res.status(401).json({ error: 'Invalid username or password' });
-        }
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
 
-        // Check password
-        const isValidPassword = await bcrypt.compare(password, user.password);
-        
-        if (!isValidPassword) {
-          return res.status(401).json({ error: 'Invalid username or password' });
-        }
+    // Check password
+    const isValidPassword = await bcrypt.compare(password, user.password);
 
-        // Update last login
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    // Update last login
         await User.updateLastLogin(user.id);
 
-        // Generate JWT token
-        const token = jwt.sign(
+    // Generate JWT token
+    const token = jwt.sign(
           { userId: user.id, username: user.username },
-          JWT_SECRET,
-          { expiresIn: '7d' }
-        );
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
 
         return res.json({
-          message: 'Login successful',
-          token,
-          user: {
+      message: 'Login successful',
+      token,
+      user: {
             id: user.id,
-            username: user.username,
-            email: user.email,
+        username: user.username,
+        email: user.email,
             lastLogin: new Date()
-          }
-        });
+      }
+    });
       } catch (supabaseError) {
         console.warn('⚠️  Supabase login failed, falling back to SQLite:', supabaseError.message);
       }
@@ -1898,22 +1898,22 @@ app.post('/api/auth/login', async (req, res) => {
       db.updateUserLastLogin(user.id);
 
       // Generate JWT token
-      const token = jwt.sign(
+        const token = jwt.sign(
         { userId: user.id, username: user.username },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      );
+          JWT_SECRET,
+          { expiresIn: '7d' }
+        );
 
-      return res.json({
+        return res.json({
         message: 'Login successful',
-        token,
-        user: {
+          token,
+          user: {
           id: user.id,
           username: user.username,
           email: user.email,
-          lastLogin: new Date()
-        }
-      });
+            lastLogin: new Date()
+          }
+        });
 
     } catch (sqliteError) {
       console.error('❌ SQLite authentication failed:', sqliteError.message);
@@ -1942,14 +1942,14 @@ app.get('/api/auth/profile', authenticateToken, async (req, res) => {
         const user = await User.findById(userId);
         if (user) {
           return res.json({
-            user: {
+      user: {
               id: user.id,
-              username: user.username,
-              email: user.email,
-              createdAt: user.createdAt,
-              lastLogin: user.lastLogin
-            }
-          });
+        username: user.username,
+        email: user.email,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin
+      }
+    });
         }
       } catch (supabaseError) {
         // If Supabase query fails, fall through to SQLite
@@ -2101,15 +2101,15 @@ app.put('/api/auth/profile', authenticateToken, async (req, res) => {
       if (error) throw error;
       
       return res.json({
-        message: 'Profile updated successfully',
-        user: {
+      message: 'Profile updated successfully',
+      user: {
           id: data.id,
           username: data.username,
           email: data.email,
           createdAt: data.created_at,
           lastLogin: data.last_login
-        }
-      });
+      }
+    });
     } else {
       // SQLite update would go here
       return res.status(500).json({ error: 'Profile update not yet implemented for SQLite users' });
