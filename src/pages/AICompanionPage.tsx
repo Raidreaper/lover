@@ -101,11 +101,24 @@ const AICompanionPage: React.FC = () => {
   const initializeCompanion = async (config: CompanionConfig) => {
     setIsInitializing(true);
     try {
+      // Validate config before sending
+      if (!config || !config.name || !config.personality || !config.identity || !config.gender || !config.role) {
+        logger.error('Invalid companion config:', config);
+        throw new Error('Companion configuration is incomplete');
+      }
+
       const response = await fetch(API_ENDPOINTS.AI_INITIALIZE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companionConfig: config }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        logger.error('Failed to initialize companion:', response.status, errorData);
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
       const data = await response.json();
       if (data.greeting) {
         const aiMessage: Message = {
@@ -122,16 +135,18 @@ const AICompanionPage: React.FC = () => {
         if (data.conversationId) {
           setConversationId(data.conversationId);
         }
+      } else if (data.error) {
+        throw new Error(data.error);
       }
     } catch (error) {
       logger.error('Failed to initialize companion:', error);
       // Fallback greeting
       const fallbackMessage: Message = {
-      id: 1,
-        text: `Hello! I'm ${config.name}, your AI companion. I'm here to support and connect with you. What's on your mind today?`,
-      sender: "ai",
-      timestamp: new Date(),
-      emotion: "welcoming"
+        id: 1,
+        text: `Hello! I'm ${config?.name || 'your companion'}, your AI companion. I'm here to support and connect with you. What's on your mind today?`,
+        sender: "ai",
+        timestamp: new Date(),
+        emotion: "welcoming"
       };
       setMessages([fallbackMessage]);
     } finally {
@@ -142,10 +157,13 @@ const AICompanionPage: React.FC = () => {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !companionConfig) return;
     
+    // Capture message before clearing input
+    const messageToSend = inputMessage.trim();
+    
     setIsSending(true);
     const userMessage: Message = {
       id: messages.length + 1,
-      text: inputMessage,
+      text: messageToSend,
       sender: "user",
       timestamp: new Date(),
       emotion: "neutral"
@@ -158,7 +176,7 @@ const AICompanionPage: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: inputMessage,
+          message: messageToSend,
           companionConfig: companionConfig,
           sessionId: sessionId,
           conversationId: conversationId
