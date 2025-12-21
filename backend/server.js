@@ -914,21 +914,22 @@ Generate a welcoming first message:`;
         console.warn('⚠️  SQLite write failed, continuing without saving greeting:', dbError.message);
       }
       
-      // --- MongoDB: Create conversation document (optional) ---
-      if (mongoConnected && sessionId && conversationId) {
-        try {
-          await AIConversation.create({
-            sessionId,
-            conversationId,
-            companionConfig,
-            messages: [{ role: 'assistant', content: greeting, timestamp: new Date() }],
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
-        } catch (mongoError) {
-          console.warn('⚠️  MongoDB save failed, continuing with SQLite only:', mongoError.message);
-        }
-      }
+      // --- MongoDB: Create conversation document (optional) - DISABLED (using Supabase) ---
+      // MongoDB is disabled - using SQLite for persistence
+      // if (mongoConnected && sessionId && conversationId) {
+      //   try {
+      //     await AIConversation.create({
+      //       sessionId,
+      //       conversationId,
+      //       companionConfig,
+      //       messages: [{ role: 'assistant', content: greeting, timestamp: new Date() }],
+      //       createdAt: new Date(),
+      //       updatedAt: new Date()
+      //     });
+      //   } catch (mongoError) {
+      //     console.warn('⚠️  MongoDB save failed, continuing with SQLite only:', mongoError.message);
+      //   }
+      // }
       
       res.json({
         greeting,
