@@ -1363,10 +1363,7 @@ const MultiplayerPage = () => {
                       key={idx}
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        sendEmoji(emoji);
-                        setShowEmojiPicker(false);
-                      }}
+                      onClick={() => sendEmoji(emoji)}
                       className="text-xl sm:text-2xl hover:bg-purple-100 dark:hover:bg-purple-900 p-1 sm:p-2 aspect-square h-auto w-full min-h-[40px] sm:min-h-[48px]"
                     >
                       {emoji}
