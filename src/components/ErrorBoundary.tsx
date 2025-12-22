@@ -24,6 +24,20 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     logger.error('ErrorBoundary caught an error:', error, errorInfo);
+    
+    // Try to clear potentially corrupted localStorage on refresh errors
+    if (error.message.includes('localStorage') || error.message.includes('sessionStorage') || 
+        error.message.includes('Cannot read') || error.message.includes('null')) {
+      try {
+        // Only clear multiplayer-related storage, not auth tokens
+        localStorage.removeItem('multiplayerSessionId');
+        localStorage.removeItem('multiplayerPlayerName');
+        logger.log('Cleared potentially corrupted localStorage');
+      } catch (clearError) {
+        logger.error('Error clearing localStorage:', clearError);
+      }
+    }
+    
     this.setState({ error, errorInfo });
   }
 
