@@ -1916,11 +1916,17 @@ app.post('/api/auth/login', async (req, res) => {
       }
 
       // Check password with timeout
-      const comparePromise = bcrypt.compare(password, user.password_hash);
-      const compareTimeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Password comparison timeout')), 3000)
-      );
-      const isValidPassword = await Promise.race([comparePromise, compareTimeout]);
+      let isValidPassword;
+      try {
+        const comparePromise = bcrypt.compare(password, user.password_hash);
+        const compareTimeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Password comparison timeout')), 3000)
+        );
+        isValidPassword = await Promise.race([comparePromise, compareTimeout]);
+      } catch (timeoutError) {
+        console.warn('⚠️  Password comparison timeout in SQLite');
+        return res.status(500).json({ error: 'Authentication timeout. Please try again.' });
+      }
       
       if (!isValidPassword) {
         return res.status(401).json({ error: 'Invalid username or password' });
