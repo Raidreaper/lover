@@ -1158,33 +1158,35 @@ const MultiplayerPage = () => {
   return (
         <div className="h-screen bg-gray-100 dark:bg-gray-900 flex flex-col overflow-hidden">
       {/* Header - Fixed at top */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-2 sm:p-3 flex items-center justify-between flex-shrink-0 sticky top-0 z-20">
-        <div className="flex items-center gap-2 sm:gap-3">
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-2 sm:p-3 flex items-center justify-between flex-shrink-0 sticky top-0 z-30">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/')}
-            className="text-white hover:bg-purple-600/20"
+            className="text-white hover:bg-purple-600/20 flex-shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
           
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center">
-            <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+          <div className="w-7 h-7 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+            <Users className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
 
-          <div>
-            <h1 className="font-semibold text-sm sm:text-base">Lover's Code</h1>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <span className="text-purple-100">Session: {sessionId}</span>
-              <div className="flex items-center gap-1">
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                <span className="text-purple-100">{connectionStatus}</span>
+          <div className="min-w-0 flex-1">
+            <h1 className="font-semibold text-xs sm:text-base truncate">Lover's Code</h1>
+            <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs overflow-hidden">
+              <span className="text-purple-100 truncate hidden sm:inline">Session: {sessionId}</span>
+              <span className="text-purple-100 truncate sm:hidden">{sessionId.substring(0, 8)}...</span>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                <span className="text-purple-100 hidden sm:inline">{connectionStatus}</span>
+                <span className="text-purple-100 sm:hidden text-[10px]">{isConnected ? 'On' : 'Off'}</span>
               </div>
               {partnerOnline && (
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                  <span className="text-green-200">Partner online</span>
+                <div className="flex items-center gap-1 flex-shrink-0 hidden sm:flex">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400"></div>
+                  <span className="text-green-200 text-[10px] sm:text-xs">Partner</span>
                 </div>
               )}
             </div>
@@ -1393,7 +1395,7 @@ Let's connect and have fun together! 🎉`;
 
       {/* Truth or Dare Result Popup (fades away) */}
       {truthOrDareResult && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center pointer-events-none transition-opacity duration-500 ${showTruthOrDarePopup ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`fixed inset-0 z-[60] flex items-center justify-center pointer-events-none transition-opacity duration-500 ${showTruthOrDarePopup ? 'opacity-100' : 'opacity-0'}`}>
           <Card className="max-w-md mx-4 bg-gradient-to-br from-purple-500 to-pink-500 text-white border-2 border-purple-300 shadow-2xl pointer-events-auto animate-in fade-in zoom-in duration-300">
             <CardContent className="p-6 text-center">
               <div className="flex items-center justify-center gap-2 mb-3">
@@ -1418,8 +1420,8 @@ Let's connect and have fun together! 🎉`;
       )}
 
       {/* Message Input - Fixed at bottom */}
-      <div className="bg-white dark:bg-gray-800 p-2 sm:p-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+      <div className="bg-white dark:bg-gray-800 p-2 sm:p-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 sticky bottom-0 z-30">
+        <form onSubmit={handleSendMessage} className="flex items-center gap-1 sm:gap-2 flex-wrap">
           <input
             type="file"
             ref={fileInputRef}
@@ -1427,110 +1429,116 @@ Let's connect and have fun together! 🎉`;
             onChange={handleImageSelect}
             className="hidden"
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={!isConnected || isUploadingImage}
-            className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-            title="Send image"
-          >
-            {isUploadingImage ? (
-              <div className="animate-spin h-4 w-4 border-2 border-purple-500 border-t-transparent rounded-full" />
-            ) : (
-              <ImageIcon className="w-4 h-4" />
-            )}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setShowTruthOrDare(true)}
-            disabled={!isConnected}
-            className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-            title="Truth or Dare"
-          >
-            <Crown className="w-4 h-4" />
-          </Button>
-          <Popover open={showNumberSelector} onOpenChange={setShowNumberSelector}>
-            <PopoverTrigger asChild>
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm" 
-                className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                disabled={!isConnected}
-              >
-                <Hash className="w-4 h-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 h-96 overflow-y-auto">
-              <div className="grid grid-cols-8 gap-1">
-                {Array.from({ length: 400 }, (_, i) => (
-                  <Button
-                    key={i + 1}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => askQuestion(i + 1)}
-                    className="text-xs border-purple-200 hover:bg-purple-50 dark:border-purple-700 dark:hover:bg-purple-900/20"
-                  >
-                    {i + 1}
-                  </Button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm" 
-                className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
-                disabled={!isConnected}
-              >
-                <Smile className="w-4 h-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[280px] sm:w-[320px] p-2" side="top" align="start">
-              <div className="max-h-[200px] sm:max-h-[240px] overflow-y-auto overflow-x-hidden">
-                <div className="grid grid-cols-5 gap-1 sm:gap-2">
-                  {emojis.map((emoji, idx) => (
+          {/* Action buttons - wrap on mobile */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!isConnected || isUploadingImage}
+              className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
+              title="Send image"
+            >
+              {isUploadingImage ? (
+                <div className="animate-spin h-3.5 w-3.5 sm:h-4 sm:w-4 border-2 border-purple-500 border-t-transparent rounded-full" />
+              ) : (
+                <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowTruthOrDare(true)}
+              disabled={!isConnected}
+              className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
+              title="Truth or Dare"
+            >
+              <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </Button>
+            <Popover open={showNumberSelector} onOpenChange={setShowNumberSelector}>
+              <PopoverTrigger asChild>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
+                  disabled={!isConnected}
+                >
+                  <Hash className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[90vw] max-w-[320px] h-[60vh] max-h-[400px] overflow-y-auto p-2" side="top" align="start">
+                <div className="grid grid-cols-6 sm:grid-cols-8 gap-1">
+                  {Array.from({ length: 400 }, (_, i) => (
                     <Button
-                      key={idx}
-                      variant="ghost"
+                      key={i + 1}
+                      variant="outline"
                       size="sm"
-                      onClick={() => sendEmoji(emoji)}
-                      className="text-xl sm:text-2xl hover:bg-purple-100 dark:hover:bg-purple-900 p-1 sm:p-2 aspect-square h-auto w-full min-h-[40px] sm:min-h-[48px]"
+                      onClick={() => askQuestion(i + 1)}
+                      className="text-[10px] sm:text-xs border-purple-200 hover:bg-purple-50 dark:border-purple-700 dark:hover:bg-purple-900/20 p-1 min-h-[32px] sm:min-h-[36px]"
                     >
-                      {emoji}
+                      {i + 1}
                     </Button>
                   ))}
                 </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverContent>
+            </Popover>
 
-          <Input
-            value={messageInput}
-            onChange={(e) => setMessageInput(e.target.value)}
-            placeholder={!isConnected ? "Connecting..." : !partnerOnline ? "Waiting for partner..." : "Type a message..."}
-            className="flex-1 border-purple-300 focus:border-purple-500 text-sm"
-            disabled={!isConnected}
-          />
-          <Button 
-            type="submit" 
-            disabled={!messageInput.trim() || !isConnected || isSendingMessage}
-            className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-3 sm:px-4 transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
-          >
-            {isSendingMessage ? (
-              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
+                  disabled={!isConnected}
+                >
+                  <Smile className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[90vw] max-w-[320px] p-2" side="top" align="start">
+                <div className="max-h-[200px] sm:max-h-[240px] overflow-y-auto overflow-x-hidden">
+                  <div className="grid grid-cols-5 gap-1 sm:gap-2">
+                    {emojis.map((emoji, idx) => (
+                      <Button
+                        key={idx}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => sendEmoji(emoji)}
+                        className="text-lg sm:text-2xl hover:bg-purple-100 dark:hover:bg-purple-900 p-1 sm:p-2 aspect-square h-auto w-full min-h-[36px] sm:min-h-[48px]"
+                      >
+                        {emoji}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Input and Send button - full width on mobile */}
+          <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto flex-1 min-w-0">
+            <Input
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              placeholder={!isConnected ? "Connecting..." : !partnerOnline ? "Waiting..." : "Type a message..."}
+              className="flex-1 border-purple-300 focus:border-purple-500 text-sm min-w-0"
+              disabled={!isConnected}
+            />
+            <Button 
+              type="submit" 
+              disabled={!messageInput.trim() || !isConnected || isSendingMessage}
+              className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-2.5 sm:px-4 transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation flex-shrink-0"
+            >
+              {isSendingMessage ? (
+                <div className="animate-spin h-3.5 w-3.5 sm:h-4 sm:w-4 border-2 border-white border-t-transparent rounded-full" />
+              ) : (
+                <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              )}
+            </Button>
+          </div>
         </form>
       </div>
 
