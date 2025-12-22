@@ -514,38 +514,117 @@ const MultiplayerPage = () => {
 
   // Restore session from localStorage on page load and auto-rejoin
   useEffect(() => {
-    const savedSessionId = localStorage.getItem('multiplayerSessionId');
-    const savedPlayerName = localStorage.getItem('multiplayerPlayerName') || user?.username;
-    
-    if (savedSessionId) {
-      setSessionId(savedSessionId);
-      if (savedPlayerName) {
-        setPlayerName(savedPlayerName);
+    try {
+      const savedSessionId = localStorage.getItem('multiplayerSessionId');
+      const savedPlayerName = localStorage.getItem('multiplayerPlayerName') || user?.username;
+      
+      if (savedSessionId && savedSessionId.trim()) {
+        const trimmedSessionId = savedSessionId.trim();
+        setSessionId(trimmedSessionId);
+        if (savedPlayerName) {
+          setPlayerName(savedPlayerName);
+        }
+        // Auto-rejoin the session if we have a sessionId
+        if (trimmedSessionId && (savedPlayerName || user?.username)) {
+          setIsInSession(true);
+          logger.log('Auto-rejoining session:', trimmedSessionId);
+        }
       }
-      // Auto-rejoin the session if we have a sessionId
-      if (savedSessionId && (savedPlayerName || user?.username)) {
-        setIsInSession(true);
-        logger.log('Auto-rejoining session:', savedSessionId);
+    } catch (error) {
+      logger.error('Error restoring session from localStorage:', error);
+      // Clear potentially corrupted localStorage
+      try {
+        localStorage.removeItem('multiplayerSessionId');
+        localStorage.removeItem('multiplayerPlayerName');
+      } catch (clearError) {
+        logger.error('Error clearing localStorage:', clearError);
       }
     }
   }, [user?.username]);
 
   useEffect(() => {
-    if (isInSession) {
+    if (isInSession && sessionId && sessionId.trim()) {
+      const trimmedSessionId = sessionId.trim();
       const socketUrl = import.meta.env.VITE_SOCKET_URL || "wss://lover-0ekx.onrender.com";
-      const socket = io(socketUrl);
+      
+      // Clean up any existing socket connection
+      if (socketRef.current) {
+        try {
+          socketRef.current.removeAllListeners();
+          socketRef.current.disconnect();
+        } catch (error) {
+          logger.error('Error cleaning up previous socket:', error);
+        }
+      }
+      
+      const socket = io(socketUrl, {
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 5,
+        timeout: 20000,
+        transports: ['websocket', 'polling']
+      });
       socketRef.current = socket;
 
       socket.on("connect", () => {
         setIsConnected(true);
         setConnectionStatus("Connected");
         logger.log("Connected to server");
+        
+        // Join session after connection is established
+        socket.emit("join-session", { 
+          sessionId: trimmedSessionId, 
+          playerName: playerName || user?.username || "Anonymous" 
+        });
       });
 
-      socket.on("disconnect", () => {
+      socket.on("disconnect", (reason) => {
         setIsConnected(false);
         setConnectionStatus("Disconnected");
-        logger.log("Disconnected from server");
+        logger.log("Disconnected from server:", reason);
+        
+        // Only show error if it's not a normal disconnection
+        if (reason === 'io server disconnect' || reason === 'transport close') {
+          setMessages((prev) => [...prev, {
+            text: "⚠️ Connection lost. Reconnecting...",
+            sender: "System",
+            timestamp: new Date()
+          }]);
+        }
+      });
+
+      socket.on("reconnect", (attemptNumber) => {
+        logger.log("Reconnected after", attemptNumber, "attempts");
+        setIsConnected(true);
+        setConnectionStatus("Connected");
+        setMessages((prev) => [...prev, {
+          text: "✅ Reconnected to server",
+          sender: "System",
+          timestamp: new Date()
+        }]);
+        
+        // Rejoin session after reconnection
+        socket.emit("join-session", { 
+          sessionId: trimmedSessionId, 
+          playerName: playerName || user?.username || "Anonymous" 
+        });
+      });
+
+      socket.on("reconnect_error", (error) => {
+        logger.error("Reconnection error:", error);
+        setConnectionStatus("Reconnecting...");
+      });
+
+      socket.on("reconnect_failed", () => {
+        setIsConnected(false);
+        setConnectionStatus("Connection failed");
+        logger.error("Failed to reconnect after all attempts");
+        setMessages((prev) => [...prev, {
+          text: "❌ Failed to reconnect. Please refresh the page.",
+          sender: "System",
+          timestamp: new Date()
+        }]);
       });
 
       socket.on("connect_error", (error) => {
@@ -571,8 +650,6 @@ const MultiplayerPage = () => {
           timestamp: new Date()
         }]);
       });
-
-      socket.emit("join-session", { sessionId, playerName: playerName || user?.username || "Anonymous" });
 
       // Listen for chat history when rejoining a session
       socket.on("chat-history", (data: {sessionId: string, messages: Array<{text: string, sender: string, timestamp: string, playerName?: string, type?: string, imageData?: string, imageUrl?: string}>}) => {
@@ -1059,15 +1136,30 @@ const MultiplayerPage = () => {
   };
 
   const joinSessionFromList = (selectedSessionId: string) => {
-    setSessionId(selectedSessionId);
-    localStorage.setItem('multiplayerSessionId', selectedSessionId);
-    setShowSessionBrowser(false);
+    const trimmedSessionId = selectedSessionId.trim();
+    if (!trimmedSessionId) {
+      toast.error('Invalid session code');
+      return;
+    }
     
-    // If user is not logged in, show name dialog
-    if (!user) {
-      setShowNameDialog(true);
-    } else {
-      setIsInSession(true);
+    try {
+      setSessionId(trimmedSessionId);
+      localStorage.setItem('multiplayerSessionId', trimmedSessionId);
+      if (playerName || user?.username) {
+        localStorage.setItem('multiplayerPlayerName', playerName || user?.username || 'Anonymous');
+      }
+      setShowSessionBrowser(false);
+      
+      // If user is not logged in, show name dialog
+      if (!user) {
+        setShowNameDialog(true);
+      } else {
+        setIsInSession(true);
+        toast.success('Joining session...');
+      }
+    } catch (error) {
+      logger.error('Error joining session from list:', error);
+      toast.error('Failed to join session. Please try again.');
     }
   };
 
