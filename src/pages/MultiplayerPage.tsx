@@ -653,7 +653,7 @@ const MultiplayerPage = () => {
 
       // Listen for chat history when rejoining a session
       socket.on("chat-history", (data: {sessionId: string, messages: Array<{text: string, sender: string, timestamp: string, playerName?: string, type?: string, imageData?: string, imageUrl?: string}>}) => {
-        if (data.sessionId === sessionId && data.messages && data.messages.length > 0) {
+        if (data.sessionId === trimmedSessionId && data.messages && data.messages.length > 0) {
           logger.log(`Loading ${data.messages.length} previous messages`);
           const historyMessages: SocketMessage[] = data.messages.map((msg, idx) => ({
             text: msg.text,
@@ -722,7 +722,7 @@ const MultiplayerPage = () => {
         // Generate a more robust unique ID for the message to prevent duplicates
         // Use content hash instead of exact timestamp to catch duplicates even with slight timestamp differences
         const contentHash = `${msgText}${msgImageData}`.substring(0, 50); // First 50 chars of content
-        const messageId = `${msg.sessionId || sessionId}-${msgSender}-${contentHash}-${Math.floor(msgTimestamp.getTime() / 1000)}`; // Round to seconds
+        const messageId = `${msg.sessionId || trimmedSessionId}-${msgSender}-${contentHash}-${Math.floor(msgTimestamp.getTime() / 1000)}`; // Round to seconds
         
         const messageWithDate = {
           ...msg,
@@ -786,7 +786,7 @@ const MultiplayerPage = () => {
 
       // Listen for Truth or Dare results - show popup that fades away
       socket.on("truth-or-dare-spin-result", (data: {result: {type: string, content: string, difficulty: string}, playerName: string, sessionId: string, timestamp: string}) => {
-        if (data.sessionId === sessionId) {
+        if (data.sessionId === trimmedSessionId) {
           // Show popup that will fade away
           setTruthOrDareResult({
             type: data.result.type,
@@ -1180,9 +1180,14 @@ const MultiplayerPage = () => {
               </label>
               <Input
                 value={sessionId}
-                onChange={(e) => setSessionId(e.target.value)}
+                onChange={(e) => {
+                  // Auto-trim whitespace and convert to uppercase for better UX
+                  const value = e.target.value.trim().toUpperCase();
+                  setSessionId(value);
+                }}
                 placeholder="Enter session code"
-                className="border-purple-300 focus:border-purple-500"
+                className="border-purple-300 focus:border-purple-500 uppercase"
+                maxLength={20}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && sessionId.trim()) {
                     joinSession();
