@@ -261,13 +261,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const refreshAuth = useCallback(async () => {
     const storedToken = getStoredToken();
     if (storedToken && !user) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       try {
         const response = await fetch(API_ENDPOINTS.AUTH_ME, {
           headers: {
             'Authorization': `Bearer ${storedToken}`,
             'Content-Type': 'application/json',
           },
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (response.ok) {
           const data = await response.json();
@@ -276,7 +282,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return true;
         }
       } catch (error) {
-        logger.error('Auth refresh failed:', error);
+        clearTimeout(timeoutId);
+        if (error instanceof Error && error.name !== 'AbortError') {
+          logger.error('Auth refresh failed:', error);
+        }
       }
     }
     return false;
