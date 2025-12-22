@@ -1847,15 +1847,24 @@ app.post('/api/auth/login', async (req, res) => {
     // Check if Supabase is available
     if (supabaseConnected) {
       try {
-        // Find user in Supabase
-        const user = await User.findOne({ username });
+        // Find user in Supabase with timeout
+        const findUserPromise = User.findOne({ username });
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout')), 5000)
+        );
+        
+        const user = await Promise.race([findUserPromise, timeoutPromise]);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    // Check password with timeout
+    const comparePromise = bcrypt.compare(password, user.password);
+    const compareTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Password comparison timeout')), 3000)
+    );
+    const isValidPassword = await Promise.race([comparePromise, compareTimeout]);
 
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid username or password' });
@@ -1888,15 +1897,19 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Fallback to SQLite authentication
     try {
-      // Find user in SQLite
+      // Find user in SQLite (synchronous, fast)
       const user = db.getUserByUsername(username);
       
       if (!user) {
         return res.status(401).json({ error: 'Invalid username or password' });
       }
 
-      // Check password
-      const isValidPassword = await bcrypt.compare(password, user.password_hash);
+      // Check password with timeout
+      const comparePromise = bcrypt.compare(password, user.password_hash);
+      const compareTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Password comparison timeout')), 3000)
+      );
+      const isValidPassword = await Promise.race([comparePromise, compareTimeout]);
       
       if (!isValidPassword) {
         return res.status(401).json({ error: 'Invalid username or password' });

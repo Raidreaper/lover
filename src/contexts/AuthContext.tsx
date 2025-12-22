@@ -44,13 +44,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const storedToken = getStoredToken();
       
       if (storedToken) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout for auth check
+        
         try {
           const response = await fetch(API_ENDPOINTS.AUTH_ME, {
             headers: {
               'Authorization': `Bearer ${storedToken}`,
               'Content-Type': 'application/json',
             },
+            signal: controller.signal,
           });
+
+          clearTimeout(timeoutId);
 
           if (response.ok) {
             const data = await response.json();
@@ -64,10 +70,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(null);
           }
         } catch (error) {
-          logger.error('Auth check failed:', error);
-          setStoredToken(null);
-          setToken(null);
-          setUser(null);
+          clearTimeout(timeoutId);
+          
+          // Don't log timeout errors as they're expected if server is down
+          if (error instanceof Error && error.name !== 'AbortError') {
+            logger.error('Auth check failed:', error);
+          }
+          
+          // Only clear token on actual errors, not timeouts (keep user logged in if server is temporarily down)
+          if (error instanceof Error && !error.name.includes('Abort')) {
+            setStoredToken(null);
+            setToken(null);
+            setUser(null);
+          }
         }
       }
       setLoading(false);
