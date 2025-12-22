@@ -1848,23 +1848,34 @@ app.post('/api/auth/login', async (req, res) => {
     if (supabaseConnected) {
       try {
         // Find user in Supabase with timeout
-        const findUserPromise = User.findOne({ username });
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database query timeout')), 5000)
-        );
-        
-        const user = await Promise.race([findUserPromise, timeoutPromise]);
+        let user;
+        try {
+          const findUserPromise = User.findOne({ username });
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Database query timeout')), 5000)
+          );
+          user = await Promise.race([findUserPromise, timeoutPromise]);
+        } catch (timeoutError) {
+          console.warn('⚠️  Supabase query timeout, falling back to SQLite');
+          throw timeoutError; // Will trigger fallback
+        }
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
     // Check password with timeout
-    const comparePromise = bcrypt.compare(password, user.password);
-    const compareTimeout = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Password comparison timeout')), 3000)
-    );
-    const isValidPassword = await Promise.race([comparePromise, compareTimeout]);
+    let isValidPassword;
+    try {
+      const comparePromise = bcrypt.compare(password, user.password);
+      const compareTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Password comparison timeout')), 3000)
+      );
+      isValidPassword = await Promise.race([comparePromise, compareTimeout]);
+    } catch (timeoutError) {
+      console.warn('⚠️  Password comparison timeout');
+      return res.status(500).json({ error: 'Authentication timeout. Please try again.' });
+    }
 
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid username or password' });
