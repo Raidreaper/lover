@@ -56,7 +56,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
 
       {/* Mobile Menu Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-[55] lg:hidden">
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/50"
