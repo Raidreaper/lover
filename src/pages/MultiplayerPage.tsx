@@ -1081,6 +1081,46 @@ const MultiplayerPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 sm:space-y-4">
+            {/* Join Session Section - Prominent First */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Join with Session Code
+              </label>
+              <Input
+                value={sessionId}
+                onChange={(e) => setSessionId(e.target.value)}
+                placeholder="Enter session code"
+                className="border-purple-300 focus:border-purple-500"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && sessionId.trim()) {
+                    joinSession();
+                  }
+                }}
+              />
+              <Button 
+                onClick={joinSession}
+                loading={isJoiningSession}
+                loadingText="Joining..."
+                disabled={!sessionId.trim() || isJoiningSession}
+                className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                {isJoiningSession ? 'Joining...' : 'Join Session'}
+              </Button>
+            </div>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-300 dark:border-gray-600" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
+                  Or Create a Session
+                </span>
+              </div>
+            </div>
+            
+            {/* Create Session Options */}
             <div className="grid grid-cols-1 gap-2">
               <Button
                 onClick={createNewSession}
@@ -1114,39 +1154,6 @@ const MultiplayerPage = () => {
               >
                 <Users className="w-4 h-4 mr-2" />
                 Browse Sessions
-              </Button>
-            </div>
-            
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">Or Join by ID</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Input
-                value={sessionId}
-                onChange={(e) => setSessionId(e.target.value)}
-                placeholder="Enter Session ID"
-                className="border-purple-300 focus:border-purple-500"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && sessionId.trim()) {
-                    joinSession();
-                  }
-                }}
-              />
-              <Button 
-                onClick={joinSession}
-                loading={isJoiningSession}
-                loadingText="Joining..."
-                disabled={!sessionId.trim() || isJoiningSession}
-                className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                {isJoiningSession ? 'Joining...' : 'Join Session'}
               </Button>
             </div>
           </CardContent>
