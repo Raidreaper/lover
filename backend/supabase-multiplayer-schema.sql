@@ -45,12 +45,16 @@ CREATE POLICY "Allow all operations on multiplayer_messages" ON multiplayer_mess
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_multiplayer_session_updated_at()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$;
 
 -- Trigger to auto-update updated_at
 CREATE TRIGGER update_multiplayer_sessions_updated_at 
