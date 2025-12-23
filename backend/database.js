@@ -629,6 +629,11 @@ class DatabaseManager {
     return stmt.get(username) || null;
   }
 
+  getUserByEmail(email) {
+    const stmt = this.db.prepare('SELECT * FROM users WHERE email = ?');
+    return stmt.get(email) || null;
+  }
+
   getUserById(userId) {
     const stmt = this.db.prepare('SELECT * FROM users WHERE id = ?');
     return stmt.get(userId) || null;
