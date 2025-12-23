@@ -1719,6 +1719,140 @@ Let's connect and have fun together! 🎉`;
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Create Named Session Dialog */}
+      <Dialog open={showCreateNamedSession} onOpenChange={setShowCreateNamedSession}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Named Session</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Give your session a memorable name that others can find and join.
+            </p>
+            <Input
+              value={sessionTitle}
+              onChange={(e) => setSessionTitle(e.target.value)}
+              placeholder="Enter session name (e.g., 'Friday Night Chat', 'Study Group')"
+              className="border-purple-300 focus:border-purple-500"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && sessionTitle.trim() && !isCreatingSession) {
+                  createNamedSession();
+                }
+              }}
+            />
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowCreateNamedSession(false);
+                  setSessionTitle("");
+                }}
+                className="flex-1 border-purple-300 hover:bg-purple-50 dark:border-purple-700 dark:hover:bg-purple-900/20"
+                disabled={isCreatingSession}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={createNamedSession}
+                className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
+                disabled={!sessionTitle.trim() || isCreatingSession}
+                loading={isCreatingSession}
+                loadingText="Creating..."
+              >
+                Create Session
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Browse Sessions Dialog */}
+      <Dialog open={showSessionBrowser} onOpenChange={setShowSessionBrowser}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Browse Available Sessions</DialogTitle>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              Join an existing session or create your own
+            </p>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+            {isLoadingSessions ? (
+              <div className="text-center py-8">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Loading sessions...</p>
+              </div>
+            ) : availableSessions.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                <p className="text-gray-600 dark:text-gray-400">No active sessions found</p>
+                <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">Create a new session to get started!</p>
+              </div>
+            ) : (
+              availableSessions.map((session: any) => (
+                <div
+                  key={session.session_id}
+                  className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors cursor-pointer"
+                  onClick={() => joinSessionFromList(session.session_id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                        {session.title || 'Untitled Session'}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          {session.session_id}
+                        </Badge>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {session.currentParticipants || 0} participant(s)
+                        </span>
+                      </div>
+                      {session.created_at && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                          Created {new Date(session.created_at).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        joinSessionFromList(session.session_id);
+                      }}
+                      className="ml-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
+                    >
+                      Join
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowSessionBrowser(false);
+                setAvailableSessions([]);
+              }}
+              className="flex-1 border-purple-300 hover:bg-purple-50 dark:border-purple-700 dark:hover:bg-purple-900/20"
+            >
+              Close
+            </Button>
+            <Button
+              onClick={async () => {
+                await loadAvailableSessions();
+              }}
+              className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
+              disabled={isLoadingSessions}
+            >
+              <Hash className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
