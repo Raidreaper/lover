@@ -1544,8 +1544,15 @@ Let's connect and have fun together! 🎉`;
         </div>
       )}
 
-      {/* Message Input - Fixed at bottom */}
-      <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 z-30">
+      {/* Message Input - Fixed at bottom with iOS safe area support */}
+      <div 
+        className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 z-30"
+        style={{ 
+          paddingBottom: 'max(env(safe-area-inset-bottom), 0px)',
+          paddingLeft: 'env(safe-area-inset-left)',
+          paddingRight: 'env(safe-area-inset-right)'
+        }}
+      >
         <div className="p-2 sm:p-3">
         <form onSubmit={handleSendMessage} className="flex items-center gap-1 sm:gap-2 flex-wrap">
           <input
@@ -1650,13 +1657,20 @@ Let's connect and have fun together! 🎉`;
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
               placeholder={!isConnected ? "Connecting..." : !partnerOnline ? "Waiting..." : "Type a message..."}
-              className="flex-1 border-purple-300 focus:border-purple-500 text-sm min-w-0"
+              className="flex-1 border-purple-300 focus:border-purple-500 text-sm min-w-0 text-base sm:text-sm"
               disabled={!isConnected}
+              style={{ fontSize: '16px' }}
+              onFocus={(e) => {
+                // Scroll input into view on iOS when keyboard appears
+                setTimeout(() => {
+                  e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+              }}
             />
             <Button 
               type="submit" 
               disabled={!messageInput.trim() || !isConnected || isSendingMessage}
-              className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-2.5 sm:px-4 transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation flex-shrink-0"
+              className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-2.5 sm:px-4 transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation flex-shrink-0 min-h-[44px] sm:min-h-[40px]"
             >
               {isSendingMessage ? (
                 <div className="animate-spin h-3.5 w-3.5 sm:h-4 sm:w-4 border-2 border-white border-t-transparent rounded-full" />
