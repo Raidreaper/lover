@@ -1494,19 +1494,21 @@ Let's connect and have fun together! 🎉`;
 
       {/* Truth or Dare Dialog */}
       <Dialog open={showTruthOrDare} onOpenChange={setShowTruthOrDare}>
-        <DialogContent className="w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
-          <DialogHeader className="pb-2 sm:pb-4">
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Crown className="h-4 w-4 sm:h-5 sm:w-5" />
-              Truth or Dare
+        <DialogContent className="w-[95vw] sm:w-[90vw] md:w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto p-2 sm:p-4 md:p-6 mx-2 sm:mx-4">
+          <DialogHeader className="pb-1 sm:pb-2 md:pb-4">
+            <DialogTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base md:text-lg">
+              <Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 flex-shrink-0" />
+              <span>Truth or Dare</span>
             </DialogTitle>
           </DialogHeader>
-          <TruthOrDareSpinner 
-            socket={socketRef.current}
-            sessionId={sessionId}
-            playerName={playerName}
-            multiplayer={isInSession && isConnected}
-          />
+          <div className="w-full overflow-x-hidden">
+            <TruthOrDareSpinner 
+              socket={socketRef.current}
+              sessionId={sessionId}
+              playerName={playerName}
+              multiplayer={isInSession && isConnected}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

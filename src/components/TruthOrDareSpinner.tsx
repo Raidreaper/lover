@@ -214,59 +214,59 @@ const TruthOrDareSpinner: React.FC<TruthOrDareSpinnerProps> = ({
   };
 
   const getTypeIcon = (type: string) => {
-    return type === 'truth' ? <Heart className="h-4 w-4" /> : <Zap className="h-4 w-4" />;
+    return type === 'truth' ? <Heart className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" /> : <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />;
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-3 sm:space-y-4 md:space-y-6 w-full max-w-full overflow-hidden">
       {/* Spinner Section */}
-      <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 border-2 border-purple-200/50">
-        <CardHeader className="text-center p-3 sm:p-6">
-          <CardTitle className="flex items-center justify-center gap-1 sm:gap-2 text-lg sm:text-2xl font-bold text-purple-800 dark:text-purple-200">
-            <Crown className="h-4 w-4 sm:h-6 sm:w-6" />
-            <span className="text-base sm:text-2xl">Truth or Dare Gacha Spinner</span>
-            <Crown className="h-4 w-4 sm:h-6 sm:w-6" />
+      <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 border-2 border-purple-200/50 w-full">
+        <CardHeader className="text-center p-2 sm:p-3 md:p-6">
+          <CardTitle className="flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-lg md:text-2xl font-bold text-purple-800 dark:text-purple-200 flex-wrap">
+            <Crown className="h-3 w-3 sm:h-4 sm:w-4 md:h-6 md:w-6 flex-shrink-0" />
+            <span className="text-xs sm:text-base md:text-2xl break-words">Truth or Dare Gacha Spinner</span>
+            <Crown className="h-3 w-3 sm:h-4 sm:w-4 md:h-6 md:w-6 flex-shrink-0" />
           </CardTitle>
-          <p className="text-xs sm:text-base text-muted-foreground mt-1 sm:mt-2">
+          <p className="text-[10px] sm:text-xs md:text-base text-muted-foreground mt-1 sm:mt-2 px-1">
             {multiplayer && spinningPlayer && spinningPlayer !== playerName 
               ? `${spinningPlayer} is spinning...` 
               : 'Spin the wheel and discover your fate!'}
           </p>
         </CardHeader>
-        <CardContent className="space-y-4 sm:space-y-6 p-3 sm:p-6">
+        <CardContent className="space-y-3 sm:space-y-4 md:space-y-6 p-2 sm:p-3 md:p-6">
           {/* Spinner Wheel */}
-          <div className="flex justify-center">
+          <div className="flex justify-center px-2">
             <div className="relative">
               <div
                 ref={spinnerRef}
-                className="w-48 h-48 sm:w-64 sm:h-64 rounded-full border-4 sm:border-8 border-purple-300 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center shadow-2xl"
+                className="w-40 h-40 sm:w-48 sm:h-48 md:w-64 md:h-64 rounded-full border-4 sm:border-6 md:border-8 border-purple-300 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center shadow-2xl"
               >
-                <div className="w-36 h-36 sm:w-48 sm:h-48 rounded-full bg-white flex items-center justify-center shadow-inner">
-                  <div className="text-center">
-                    <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">🎯</div>
-                    <div className="text-[10px] sm:text-sm font-medium text-gray-600">Spin to Win!</div>
+                <div className="w-32 h-32 sm:w-36 sm:h-36 md:w-48 md:h-48 rounded-full bg-white flex items-center justify-center shadow-inner">
+                  <div className="text-center px-1">
+                    <div className="text-xl sm:text-2xl md:text-4xl mb-0.5 sm:mb-1 md:mb-2">🎯</div>
+                    <div className="text-[9px] sm:text-[10px] md:text-sm font-medium text-gray-600">Spin to Win!</div>
                   </div>
                 </div>
               </div>
-              <div className="absolute -top-2 sm:-top-4 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 sm:border-l-8 border-r-4 sm:border-r-8 border-b-4 sm:border-b-8 border-l-transparent border-r-transparent border-b-purple-600"></div>
+              <div className="absolute -top-2 sm:-top-3 md:-top-4 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 sm:border-l-6 md:border-l-8 border-r-4 sm:border-r-6 md:border-r-8 border-b-4 sm:border-b-6 md:border-b-8 border-l-transparent border-r-transparent border-b-purple-600"></div>
             </div>
           </div>
 
           {/* Controls */}
-          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 md:gap-4">
             <Button
               onClick={spinWheel}
               disabled={isSpinning}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 sm:px-8 py-2 sm:py-3 text-sm sm:text-lg font-semibold w-full sm:w-auto transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-3 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-lg font-semibold w-full sm:w-auto transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none touch-manipulation"
             >
               {isSpinning ? (
                 <>
-                  <div className="animate-spin mr-2 text-base sm:text-lg">🎰</div>
+                  <div className="animate-spin mr-1 sm:mr-2 text-sm sm:text-base md:text-lg">🎰</div>
                   <span>Spinning...</span>
                 </>
               ) : (
                 <>
-                  <Target className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                  <Target className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                   <span>Spin the Wheel!</span>
                 </>
               )}
@@ -274,16 +274,16 @@ const TruthOrDareSpinner: React.FC<TruthOrDareSpinnerProps> = ({
             <Button
               onClick={resetSpinner}
               variant="outline"
-              className="border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-900/20 w-full sm:w-auto transition-all duration-200 transform active:scale-95 touch-manipulation"
+              className="border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-900/20 w-full sm:w-auto transition-all duration-200 transform active:scale-95 touch-manipulation text-xs sm:text-sm"
             >
-              <RotateCcw className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <RotateCcw className="mr-1 sm:mr-2 h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
               Reset
             </Button>
           </div>
 
           {/* Stats */}
           <div className="flex justify-center">
-            <Badge variant="secondary" className="text-xs sm:text-sm">
+            <Badge variant="secondary" className="text-[10px] sm:text-xs md:text-sm">
               Spins: {spinCount} | History: {spinHistory.length}
             </Badge>
           </div>
@@ -292,28 +292,28 @@ const TruthOrDareSpinner: React.FC<TruthOrDareSpinnerProps> = ({
 
       {/* Result Section */}
       {currentResult && (
-        <Card className="bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/50 dark:to-pink-950/50 border-2 border-rose-200/50 animate-fade-in">
-          <CardHeader className="text-center p-3 sm:p-6">
-            <CardTitle className="flex items-center justify-center gap-1 sm:gap-2 text-base sm:text-xl font-bold">
+        <Card className="bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/50 dark:to-pink-950/50 border-2 border-rose-200/50 animate-fade-in w-full">
+          <CardHeader className="text-center p-2 sm:p-3 md:p-6">
+            <CardTitle className="flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base md:text-xl font-bold flex-wrap">
               {getTypeIcon(currentResult.type)}
-              <span className="text-sm sm:text-xl">{currentResult.type.toUpperCase()} - {currentResult.difficulty.toUpperCase()}</span>
+              <span className="text-xs sm:text-sm md:text-xl break-words">{currentResult.type.toUpperCase()} - {currentResult.difficulty.toUpperCase()}</span>
               {getTypeIcon(currentResult.type)}
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-center space-y-3 sm:space-y-4 p-3 sm:p-6">
-            <div className="text-sm sm:text-lg font-medium text-gray-800 dark:text-gray-200 p-3 sm:p-4 bg-white/50 rounded-lg">
+          <CardContent className="text-center space-y-2 sm:space-y-3 md:space-y-4 p-2 sm:p-3 md:p-6">
+            <div className="text-xs sm:text-sm md:text-lg font-medium text-gray-800 dark:text-gray-200 p-2 sm:p-3 md:p-4 bg-white/50 rounded-lg break-words overflow-wrap-anywhere">
               "{currentResult.content}"
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              <Badge className={`${getDifficultyColor(currentResult.difficulty)} text-xs sm:text-sm`}>
+            <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
+              <Badge className={`${getDifficultyColor(currentResult.difficulty)} text-[10px] sm:text-xs md:text-sm`}>
                 {currentResult.difficulty}
               </Badge>
-              <Badge variant="outline" className="border-purple-300 text-purple-700 dark:border-purple-700 dark:text-purple-300 text-xs sm:text-sm">
+              <Badge variant="outline" className="border-purple-300 text-purple-700 dark:border-purple-700 dark:text-purple-300 text-[10px] sm:text-xs md:text-sm">
                 {currentResult.category}
               </Badge>
             </div>
-            <div className="text-xs sm:text-sm text-muted-foreground">
-              <Sparkles className="inline h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground px-1">
+              <Sparkles className="inline h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-4 md:w-4 mr-0.5 sm:mr-1" />
               Challenge accepted! Time to step up your game!
             </div>
           </CardContent>
@@ -322,24 +322,24 @@ const TruthOrDareSpinner: React.FC<TruthOrDareSpinnerProps> = ({
 
       {/* History Section */}
       {spinHistory.length > 0 && (
-        <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/50 dark:to-purple-950/50 border-2 border-indigo-200/50">
-          <CardHeader className="p-3 sm:p-6">
-            <CardTitle className="text-base sm:text-lg font-bold text-indigo-800 dark:text-indigo-200">
+        <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/50 dark:to-purple-950/50 border-2 border-indigo-200/50 w-full">
+          <CardHeader className="p-2 sm:p-3 md:p-6">
+            <CardTitle className="text-sm sm:text-base md:text-lg font-bold text-indigo-800 dark:text-indigo-200">
               Recent Spins
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-6">
-            <div className="space-y-2">
+          <CardContent className="p-2 sm:p-3 md:p-6">
+            <div className="space-y-1.5 sm:space-y-2">
               {spinHistory.map((item, index) => (
                 <div
                   key={`${item.id}-${index}`}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-2 sm:p-3 bg-white/50 rounded-lg"
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2 p-1.5 sm:p-2 md:p-3 bg-white/50 rounded-lg"
                 >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    {getTypeIcon(item.type)}
-                    <span className="font-medium text-xs sm:text-sm truncate">{item.content}</span>
+                  <div className="flex items-start sm:items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                    <span className="flex-shrink-0 mt-0.5 sm:mt-0">{getTypeIcon(item.type)}</span>
+                    <span className="font-medium text-[10px] sm:text-xs md:text-sm break-words overflow-wrap-anywhere">{item.content}</span>
                   </div>
-                  <Badge className={`${getDifficultyColor(item.difficulty)} text-xs sm:text-sm flex-shrink-0`}>
+                  <Badge className={`${getDifficultyColor(item.difficulty)} text-[10px] sm:text-xs md:text-sm flex-shrink-0`}>
                     {item.difficulty}
                   </Badge>
                 </div>
