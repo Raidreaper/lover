@@ -1123,12 +1123,12 @@ const MultiplayerPage = () => {
           setIsInSession(true);
         }
       } else {
-        const errorData = await response.json();
-        alert(errorData.error || 'Failed to create session');
+        const errorData = await response.json().catch(() => ({}));
+        toast.error(errorData.error || 'Failed to create session');
       }
     } catch (error) {
       console.error('Error creating named session:', error);
-      alert('Failed to create session. Please try again.');
+      toast.error('Failed to create session. Please check your connection and try again.');
     } finally {
       setIsCreatingSession(false);
     }
