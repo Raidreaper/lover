@@ -1275,7 +1275,7 @@ const MultiplayerPage = () => {
   return (
         <div className="h-screen h-[100dvh] bg-gray-100 dark:bg-gray-900 flex flex-col overflow-hidden fixed inset-0" style={{ paddingTop: 'env(safe-area-inset-top)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
       {/* Header - Fixed at top */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-2 sm:p-3 flex items-center justify-between flex-shrink-0 z-30">
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-2 sm:p-3 flex items-center justify-between flex-shrink-0 z-40 relative" style={{ position: 'sticky', top: 0 }}>
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
           <Button
             variant="ghost"
