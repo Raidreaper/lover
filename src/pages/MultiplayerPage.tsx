@@ -1494,10 +1494,10 @@ Let's connect and have fun together! 🎉`;
 
       {/* Truth or Dare Dialog */}
       <Dialog open={showTruthOrDare} onOpenChange={setShowTruthOrDare}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Crown className="h-5 w-5" />
+        <DialogContent className="w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
+          <DialogHeader className="pb-2 sm:pb-4">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Crown className="h-4 w-4 sm:h-5 sm:w-5" />
               Truth or Dare
             </DialogTitle>
           </DialogHeader>
