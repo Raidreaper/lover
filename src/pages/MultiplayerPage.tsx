@@ -512,7 +512,8 @@ const MultiplayerPage = () => {
     }
   }, []);
 
-  // Restore session from localStorage on page load and auto-rejoin
+  // Restore session from localStorage on page load (but don't auto-rejoin)
+  // Only restore the sessionId and playerName to pre-fill the form
   useEffect(() => {
     try {
       const savedSessionId = localStorage.getItem('multiplayerSessionId');
@@ -524,11 +525,9 @@ const MultiplayerPage = () => {
         if (savedPlayerName) {
           setPlayerName(savedPlayerName);
         }
-        // Auto-rejoin the session if we have a sessionId
-        if (trimmedSessionId && (savedPlayerName || user?.username)) {
-          setIsInSession(true);
-          logger.log('Auto-rejoining session:', trimmedSessionId);
-        }
+        // Don't auto-rejoin - let user choose to join or create new session
+        // The sessionId is pre-filled in the input field for convenience
+        logger.log('Restored session from localStorage (not auto-joining):', trimmedSessionId);
       }
     } catch (error) {
       logger.error('Error restoring session from localStorage:', error);
