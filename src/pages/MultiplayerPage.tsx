@@ -1441,7 +1441,13 @@ Let's connect and have fun together! 🎉`;
       </div>
 
       {/* Chat Messages - Only this area scrolls */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0">
+      <div 
+        className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0"
+        style={{ 
+          paddingBottom: 'max(env(safe-area-inset-bottom), 0px)',
+          WebkitOverflowScrolling: 'touch'
+        }}
+      >
         {messages.length === 0 && (
           <div className="text-center py-6 sm:py-8 text-gray-500">
             <Users className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 opacity-50" />
