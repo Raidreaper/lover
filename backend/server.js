@@ -1788,10 +1788,16 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Fallback to SQLite registration
     try {
-      // Check if user already exists in SQLite
-      const existingUser = db.getUserByUsername(username);
-      if (existingUser) {
+      // Check if user already exists in SQLite (by username or email)
+      const existingUserByUsername = db.getUserByUsername(username);
+      const existingUserByEmail = db.getUserByEmail(email);
+      
+      if (existingUserByUsername) {
         return res.status(409).json({ error: 'Username already exists' });
+      }
+      
+      if (existingUserByEmail) {
+        return res.status(409).json({ error: 'Email already exists' });
       }
 
       // Hash password
