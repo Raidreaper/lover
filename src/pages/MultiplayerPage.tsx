@@ -1546,16 +1546,17 @@ Let's connect and have fun together! 🎉`;
 
       {/* Message Input - Fixed at bottom with iOS safe area support */}
       <div 
-        className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 z-50 relative"
+        className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 z-50"
         style={{ 
           paddingBottom: 'max(env(safe-area-inset-bottom), 8px)',
           paddingLeft: 'max(env(safe-area-inset-left), 0px)',
           paddingRight: 'max(env(safe-area-inset-right), 0px)',
-          position: 'sticky',
+          position: 'absolute',
           bottom: 0,
           left: 0,
           right: 0,
-          width: '100%'
+          width: '100%',
+          backgroundColor: 'rgb(255, 255, 255)'
         }}
       >
         <div className="p-2 sm:p-3">
