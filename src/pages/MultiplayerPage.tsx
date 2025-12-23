@@ -1086,18 +1086,28 @@ const MultiplayerPage = () => {
       if (response.ok) {
         const data = await response.json();
         setAvailableSessions(data.sessions || []);
+        if (data.sessions && data.sessions.length === 0) {
+          toast.info('No active sessions found. Create a new one to get started!');
+        }
       } else {
-        console.error('Failed to load sessions');
+        const errorData = await response.json().catch(() => ({}));
+        toast.error(errorData.error || 'Failed to load sessions');
+        setAvailableSessions([]);
       }
     } catch (error) {
       console.error('Error loading sessions:', error);
+      toast.error('Failed to load sessions. Please check your connection and try again.');
+      setAvailableSessions([]);
     } finally {
       setIsLoadingSessions(false);
     }
   };
 
   const createNamedSession = async () => {
-    if (!sessionTitle.trim()) return;
+    if (!sessionTitle.trim()) {
+      toast.error('Please enter a session name');
+      return;
+    }
     
     setIsCreatingSession(true);
     try {
