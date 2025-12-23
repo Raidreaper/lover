@@ -1537,7 +1537,8 @@ Let's connect and have fun together! 🎉`;
       )}
 
       {/* Message Input - Fixed at bottom */}
-      <div className="bg-white dark:bg-gray-800 p-2 sm:p-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 z-30">
+      <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 z-30">
+        <div className="p-2 sm:p-3">
         <form onSubmit={handleSendMessage} className="flex items-center gap-1 sm:gap-2 flex-wrap">
           <input
             type="file"
