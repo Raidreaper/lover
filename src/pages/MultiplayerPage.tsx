@@ -1123,8 +1123,12 @@ const MultiplayerPage = () => {
         const data = await response.json();
         setSessionId(data.sessionId);
         localStorage.setItem('multiplayerSessionId', data.sessionId);
+        if (playerName || user?.username) {
+          localStorage.setItem('multiplayerPlayerName', playerName || user?.username || 'Anonymous');
+        }
         setShowCreateNamedSession(false);
         setSessionTitle("");
+        toast.success(`Session "${data.title}" created successfully!`);
         
         // If user is not logged in, show name dialog
         if (!user) {
