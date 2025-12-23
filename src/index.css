@@ -333,12 +333,6 @@
     -webkit-overflow-scrolling: touch;
   }
   
-  /* Fix for iOS fixed positioning issues */
-  [class*="fixed"] {
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-  }
-  
   /* Better dialog behavior on iOS */
   [role="dialog"] {
     -webkit-overflow-scrolling: touch;
