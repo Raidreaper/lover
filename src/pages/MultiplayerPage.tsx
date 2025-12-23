@@ -1273,7 +1273,7 @@ const MultiplayerPage = () => {
   }
 
   return (
-        <div className="h-screen h-[100dvh] bg-gray-100 dark:bg-gray-900 flex flex-col overflow-hidden fixed inset-0" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+        <div className="h-screen h-[100dvh] bg-gray-100 dark:bg-gray-900 flex flex-col overflow-hidden fixed inset-0" style={{ paddingTop: 'env(safe-area-inset-top)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
       {/* Header - Fixed at top */}
       <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-2 sm:p-3 flex items-center justify-between flex-shrink-0 z-30">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
@@ -1444,8 +1444,8 @@ Let's connect and have fun together! 🎉`;
       <div 
         className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0"
         style={{ 
-          paddingBottom: 'max(env(safe-area-inset-bottom), 0px)',
-          WebkitOverflowScrolling: 'touch'
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain'
         }}
       >
         {messages.length === 0 && (
@@ -1546,11 +1546,16 @@ Let's connect and have fun together! 🎉`;
 
       {/* Message Input - Fixed at bottom with iOS safe area support */}
       <div 
-        className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 z-30"
+        className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 z-50 relative"
         style={{ 
-          paddingBottom: 'max(env(safe-area-inset-bottom), 0px)',
-          paddingLeft: 'env(safe-area-inset-left)',
-          paddingRight: 'env(safe-area-inset-right)'
+          paddingBottom: 'max(env(safe-area-inset-bottom), 8px)',
+          paddingLeft: 'max(env(safe-area-inset-left), 0px)',
+          paddingRight: 'max(env(safe-area-inset-right), 0px)',
+          position: 'sticky',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          width: '100%'
         }}
       >
         <div className="p-2 sm:p-3">
