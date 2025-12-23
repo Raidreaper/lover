@@ -1658,8 +1658,9 @@ Let's connect and have fun together! 🎉`;
             </Button>
           </div>
         </form>
+        </div>
         {/* Bottom text element - visible on all screen sizes */}
-        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center italic mt-2 px-2 pb-1">
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center italic px-2 pb-2 pt-1 block">
           "Connection is the bridge between two hearts, built one message at a time."
         </p>
       </div>
