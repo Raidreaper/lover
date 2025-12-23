@@ -1445,7 +1445,8 @@ Let's connect and have fun together! 🎉`;
         className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0"
         style={{ 
           WebkitOverflowScrolling: 'touch',
-          overscrollBehavior: 'contain'
+          overscrollBehavior: 'contain',
+          paddingBottom: '200px' // Space for fixed input area
         }}
       >
         {messages.length === 0 && (
