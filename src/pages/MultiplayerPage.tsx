@@ -559,8 +559,16 @@ const MultiplayerPage = () => {
       const socket = io(socketUrl, {
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: 5,
+        reconnectionDelayMax: 10000, // Increased for Render's slower responses
+        reconnectionAttempts: Infinity, // Keep trying to reconnect
+        timeout: 20000, // 20 seconds timeout for connection
+        // Match server ping settings
+        transports: ['websocket', 'polling'],
+        upgrade: true,
+        rememberUpgrade: true,
+        // Better handling for Render's load balancer
+        forceNew: false,
+        multiplex: true,
         timeout: 20000,
         transports: ['websocket', 'polling']
       });
