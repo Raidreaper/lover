@@ -634,6 +634,12 @@ const MultiplayerPage = () => {
         }]);
       });
 
+      // Handle server ping to keep connection alive
+      socket.on("ping", (data) => {
+        // Respond to server ping to keep connection alive
+        socket.emit("pong", { timestamp: Date.now() });
+      });
+
       socket.on("connect_error", (error) => {
         setIsConnected(false);
         setConnectionStatus("Connection failed");
