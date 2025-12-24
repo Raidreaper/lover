@@ -357,9 +357,22 @@ const io = new SocketIOServer(server, {
     origin: allowedOrigins,
     credentials: true,
   },
-  pingTimeout: 60000,
-  pingInterval: 25000,
-  transports: ['websocket', 'polling']
+  // Increased timeouts for Render's load balancer and free tier limitations
+  pingTimeout: 120000, // 2 minutes - Render free tier can have longer delays
+  pingInterval: 25000, // 25 seconds - keep connection alive
+  // Allow both transports, but prefer websocket
+  transports: ['websocket', 'polling'],
+  // Allow upgrade from polling to websocket
+  allowUpgrades: true,
+  // Increase maxHttpBufferSize for large messages
+  maxHttpBufferSize: 1e6, // 1MB
+  // Connection state recovery for better reconnection
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
+    skipMiddlewares: true,
+  },
+  // Better handling for Render's proxy
+  allowEIO3: true,
 });
 
 // Store active sessions and their participants with cleanup
